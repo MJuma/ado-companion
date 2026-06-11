@@ -11,3 +11,11 @@ stats.html
 # VitePress
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# Dev browser profiles & auth — NEVER commit (contain ADO session cookies)
+.dev-profile
+.playwright
+.playwright-cli
+.playwright-profile
+playwright-cli.local.json
+*.auth.json

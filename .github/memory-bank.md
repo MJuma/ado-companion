@@ -35,3 +35,16 @@ A grep-searchable knowledge base of gotchas, decisions, issues, patterns, and da
 
 [pattern] release-stable-names: release.yml copies the versioned zips to stable names ado-companion-chrome.zip / ado-companion-firefox.zip so the docs /releases/latest/download links stay valid.
 [gotcha] manifest-version-semver: manifest versions cannot carry semver pre-release tags (e.g. 1.2.0-beta.0) — use plain x.y.z.
+
+# ── Review feature (PR Markdown review) ──
+
+[decision] surface: native "Review" pivot beside Raw content/Preview on a PR .md view; in-page Shadow DOM island + Word-style comment rail; reusable surface-enhancer framework; PR-only. See @lazy-instructions/review-feature.md.
+[decision] anchoring: line/block anchoring for everyone (interoperable with native ADO comments — line-based threadContext is the universal contract); phrase-highlight via thread properties + true char offsets are later additive layers.
+[data] ado-pr-dom: Raw/Preview is a bolt-split-button in `.repos-compare-toolbar`; file content sibling `.repos-changes-explorer-splitter`; ADO rendered preview `.markdown-content`; PR page root `.repos-pr-details-page`. (Verified on PR 980523.)
+[pattern] feature-progress: Phase 1 (src/lib/ado REST/data) + Phase 2 (src/lib/markdown render) are built and tested; Phase 3 = inject the Review pivot + mount the island.
+
+# ── Dev loop / preview ──
+
+[pattern] preview-auth: drive the user's authed Edge via `playwright-cli open --browser msedge --persistent --profile "$HOME/Library/Application Support/Microsoft Edge" <url>`. See the preview-in-devops skill.
+[gotcha] edge-cdp-port: --remote-debugging-port is blocked on Edge's default profile; use Playwright's persistent-profile launch (pipe CDP) instead.
+[pattern] hmr-loop: `pnpm dev:extension` (WXT) gives hot-reload in a separate `.dev-profile` (sign into ADO once there). Auth there is separate from the user's main Edge profile.

@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'wxt';
 
 // WXT configuration.
@@ -11,6 +12,17 @@ export default defineConfig({
     srcDir: 'src',
     imports: false,
     modules: ['@wxt-dev/module-solid'],
+    // Dev-only browser launch (web-ext), used by `pnpm dev:extension`:
+    //  - a persistent profile so the Azure DevOps sign-in persists between runs
+    //  - a CDP port so playwright-cli can attach to this same browser
+    //  - opens Azure DevOps on launch
+    // See the `preview-in-devops` skill. `.dev-profile` is gitignored.
+    webExt: {
+        chromiumProfile: resolve('.dev-profile'),
+        keepProfileChanges: true,
+        chromiumArgs: ['--remote-debugging-port=9222'],
+        startUrls: ['https://dev.azure.com'],
+    },
     manifest: {
         name: 'ADO Companion',
         description: 'Adds extra functionality to Azure DevOps.',

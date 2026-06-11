@@ -112,12 +112,21 @@ On push to `master`, `release.yml` detects the new version, builds, zips, and cr
 
 Load `@lazy-instructions/<file>` (→ `.github/lazy-instructions/`) only when relevant to the task:
 
+- `@lazy-instructions/review-feature.md` — **current feature**: PR Markdown Review (status, decisions, ADO DOM anchors)
 - `@lazy-instructions/wxt.md` — WXT config, import paths, MV2/MV3, `wxt prepare`, build/zip outputs
 - `@lazy-instructions/app-structure.md` — directory layout, content-script injection, where to add things
 - `@lazy-instructions/ui-components.md` — Fluent Web Components + Solid, JSX typings, `on:click`, theming
 - `@lazy-instructions/build-system.md` — tsconfig composition, oxlint command, CI ordering
 - `@lazy-instructions/testing.md` — vitest + WxtVitest + fakeBrowser, coverage scope
 - `@lazy-instructions/releasing.md` — changeset flow, release.yml, install-page assets
+
+## Skills & previewing
+
+Custom skills in `.github/skills/`: `memory-bank`, `add-fluent-component`,
+`add-content-feature`, `release-extension`, and **`preview-in-devops`** — drive the
+user's already-authenticated **Edge** profile via `playwright-cli` to view and
+inspect Azure DevOps (the user prefers reusing their Edge auth). For live edits,
+`pnpm dev:extension` gives hot reload.
 
 ## Memory Bank
 

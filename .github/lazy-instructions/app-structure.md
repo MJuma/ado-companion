@@ -23,7 +23,9 @@ packages/extension/
     │   └── InjectedWidget.tsx
     ├── lib/                    # pure, framework-free logic (tested; coverage enforced)
     │   ├── ado.ts              # parseAdoContext(url) -> { isAzureDevOps, organization, project }
-    │   └── ado.spec.ts
+    │   ├── ado/                # ADO PR REST + data layer: pr (context/URL), http, threads,
+    │   │                        #   iterations, items, attachments, identities, pr-types (Phase 1)
+    │   └── markdown/           # markdown-it source-line render + DOMPurify + link resolution (Phase 2)
     ├── fluent.d.ts             # Solid JSX typings for Fluent custom elements
     └── test-setup.ts           # suppresses console, resets fakeBrowser
 ```
