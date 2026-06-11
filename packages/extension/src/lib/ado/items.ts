@@ -1,4 +1,4 @@
-import { adoGetJson } from './http';
+import { adoGetJson, adoGetText } from './http';
 import { getPrApiBaseUrl, getRepoApiBaseUrl } from './pr';
 import type { PrContext } from './pr';
 
@@ -30,8 +30,8 @@ export async function getFileContentAtCommit(
         'versionDescriptor.version': commitId,
         'versionDescriptor.versionType': 'commit',
     });
-    const item = await adoGetJson<{ content?: string }>(url);
-    return item.content ?? '';
+    // The items endpoint returns the raw file bytes as text (not a JSON envelope).
+    return adoGetText(url);
 }
 
 /**

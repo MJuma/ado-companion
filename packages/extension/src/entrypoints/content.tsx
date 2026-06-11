@@ -1,37 +1,78 @@
-import { webLightTheme } from '@fluentui/tokens';
-import { setTheme } from '@fluentui/web-components';
-import { render } from 'solid-js/web';
-import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
-import { InjectedWidget } from '../app/InjectedWidget';
-import { parseAdoContext } from '../lib/ado';
+import { createReviewEnhancer } from '../app/review/review-enhancer';
+import { findStale, planReconcile } from '../lib/enhancers/reconcile';
+import type { SurfaceEnhancer } from '../lib/enhancers/types';
+
+interface ActiveMount {
+    key: string;
+    cleanup: () => void;
+    marker: Node;
+}
 
 export default defineContentScript({
     matches: ['https://dev.azure.com/*', 'https://*.visualstudio.com/*'],
-    cssInjectionMode: 'ui',
-    async main(ctx) {
-        const context = parseAdoContext(window.location.href);
-        if (!context.isAzureDevOps) {
-            return;
+    main() {
+        const enhancers: SurfaceEnhancer[] = [createReviewEnhancer()];
+        const active = new Map<string, ActiveMount>();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let running = false;
+
+        function schedule(): void {
+            if (timer !== undefined) {
+                return;
+            }
+            timer = setTimeout(() => {
+                timer = undefined;
+                void tick();
+            }, 150);
         }
 
-        const ui = await createShadowRootUi(ctx, {
-            name: 'ado-companion-ui',
-            position: 'inline',
-            anchor: 'body',
-            onMount(container) {
-                setTheme(webLightTheme, container);
-                return render(
-                    () => <InjectedWidget context={context} />,
-                    container,
-                );
-            },
-            onRemove(dispose) {
-                dispose?.();
-            },
-        });
+        async function tick(): Promise<void> {
+            if (running) {
+                schedule();
+                return;
+            }
+            running = true;
+            try {
+                // Re-mount anything ADO's SPA re-rendered out from under us.
+                for (const id of findStale(active, (node) => document.contains(node))) {
+                    active.get(id)?.cleanup();
+                    active.delete(id);
+                }
 
-        ui.mount();
+                const activeKeys = new Map(
+                    Array.from(active, ([id, entry]) => [id, entry.key] as const),
+                );
+                const plan = planReconcile(
+                    enhancers,
+                    activeKeys,
+                    window.location.href,
+                    (selector) => document.querySelector(selector) !== null,
+                );
+
+                for (const id of plan.unmount) {
+                    active.get(id)?.cleanup();
+                    active.delete(id);
+                }
+                for (const { id, key } of plan.mount) {
+                    const enhancer = enhancers.find((candidate) => candidate.id === id);
+                    const anchor = enhancer
+                        ? document.querySelector<HTMLElement>(enhancer.anchor)
+                        : null;
+                    if (!enhancer || !anchor) {
+                        continue;
+                    }
+                    const result = await enhancer.mount(key, anchor);
+                    active.set(id, { key, cleanup: result.cleanup, marker: result.marker });
+                }
+            } finally {
+                running = false;
+            }
+        }
+
+        schedule();
+        const observer = new MutationObserver(() => schedule());
+        observer.observe(document.body, { childList: true, subtree: true });
     },
 });

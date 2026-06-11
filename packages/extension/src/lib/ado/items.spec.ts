@@ -49,8 +49,8 @@ describe('getPrSourceCommit', () => {
 });
 
 describe('getFileContentAtCommit', () => {
-    it('requests content with includeContent and the commit version', async () => {
-        fetchMock.mockResolvedValue(fakeResponse({ jsonValue: { content: '# Hello' } }));
+    it('requests raw content with includeContent and the commit version', async () => {
+        fetchMock.mockResolvedValue(fakeResponse({ textValue: '# Hello' }));
 
         const content = await getFileContentAtCommit(REPO, '/docs/spec.md', 'sha1');
 
@@ -63,8 +63,8 @@ describe('getFileContentAtCommit', () => {
         expect(decodeURIComponent(url)).toContain('path=/docs/spec.md');
     });
 
-    it('returns an empty string when content is absent', async () => {
-        fetchMock.mockResolvedValue(fakeResponse({ jsonValue: {} }));
+    it('returns an empty string for an empty file', async () => {
+        fetchMock.mockResolvedValue(fakeResponse({ textValue: '' }));
         expect(await getFileContentAtCommit(REPO, '/a.md', 'sha')).toBe('');
     });
 });
@@ -86,7 +86,7 @@ describe('getFileContent', () => {
         fetchMock.mockResolvedValueOnce(
             fakeResponse({ jsonValue: { lastMergeSourceCommit: { commitId: 'abc123' } } }),
         );
-        fetchMock.mockResolvedValueOnce(fakeResponse({ jsonValue: { content: '# Doc' } }));
+        fetchMock.mockResolvedValueOnce(fakeResponse({ textValue: '# Doc' }));
 
         const content = await getFileContent(ctx);
 
