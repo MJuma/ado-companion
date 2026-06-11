@@ -9,10 +9,21 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
   http, threads, iterations, items, attachments, identities, pr-types). Unit-tested.
 - ✅ **Phase 2** — `src/lib/markdown/*`: markdown-it render with `data-source-line`
   anchoring + DOMPurify sanitize + relative link/image resolution. Unit-tested.
-- ⏳ **Phase 3** — surface-enhancer framework + "Review" pivot + Shadow DOM island
-  (read-only render). DOM anchors verified (below).
-- ⏳ **Phases 4–6** — read comments (rail + anchoring) / write + clipboard image
-  paste / toolbar popup + options page.
+- ✅ **Phase 3** — surface-enhancer framework (`src/lib/enhancers`) + content-script
+  host (`src/entrypoints/content.tsx`) + native "Review" pivot in `.repos-compare-toolbar`
+  + Shadow DOM island (`src/app/review/`) rendering the file Markdown read-only,
+  themed via ADO CSS vars. **Verified live** on PR 980523.
+- ✅ **Phase 4** — read comments: two-pane `ReviewView` (doc + Word-style rail).
+  Fetches the file's threads (`listThreads` + `isFileThread`), renders `CommentCard`s
+  (status, avatar, markdown bodies). `src/lib/markdown/anchor.ts` maps thread source
+  line → rendered block for block highlight + bidirectional click-sync. **Verified
+  live** on PR 980523 (31 threads → 26 anchored blocks; comment-body images render).
+- ⏳ **Phase 5** — write: reply/create/edit + thread-status controls + @mentions +
+  clipboard/drag image paste-upload. The ADO write **data layer is already built +
+  tested** (`threads.ts`: `createThread`/`addReply`/`updateComment`/`setThreadStatus`/
+  `deleteComment`; `attachments.ts`: `uploadAttachment`/`attachmentMarkdown`) — Phase 5
+  is the UI wiring on top.
+- ⏳ **Phase 6** — toolbar popup + options page (allowlist).
 
 ## Locked decisions
 

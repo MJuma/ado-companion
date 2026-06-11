@@ -41,10 +41,15 @@ A grep-searchable knowledge base of gotchas, decisions, issues, patterns, and da
 [decision] surface: native "Review" pivot beside Raw content/Preview on a PR .md view; in-page Shadow DOM island + Word-style comment rail; reusable surface-enhancer framework; PR-only. See @lazy-instructions/review-feature.md.
 [decision] anchoring: line/block anchoring for everyone (interoperable with native ADO comments — line-based threadContext is the universal contract); phrase-highlight via thread properties + true char offsets are later additive layers.
 [data] ado-pr-dom: Raw/Preview is a bolt-split-button in `.repos-compare-toolbar`; file content sibling `.repos-changes-explorer-splitter`; ADO rendered preview `.markdown-content`; PR page root `.repos-pr-details-page`. (Verified on PR 980523.)
-[pattern] feature-progress: Phase 1 (src/lib/ado REST/data) + Phase 2 (src/lib/markdown render) are built and tested; Phase 3 = inject the Review pivot + mount the island.
+[pattern] feature-progress: Phases 1–4 built, tested, and verified live (REST/data layer, markdown render, Review pivot+island, read-comments rail with anchored threads). Next: Phase 5 = write UI (reply/create/edit/status + @mentions + image paste) on top of the already-built write data layer; Phase 6 = popup/options.
+[gotcha] items-raw-text: the ADO items API (file content, `includeContent=true`) returns RAW TEXT, not JSON — read it with `adoGetText`, not `adoGetJson` (items.ts).
+[gotcha] theme-vars-pierce-shadow: ADO theme CSS custom properties pierce the Shadow DOM boundary — style the island with `--text-primary-color`, `--background-color`, `--palette-neutral-N` (as "R, G, B" triplets, e.g. `rgba(var(--palette-neutral-8), .5)`), `--communication-foreground`, with literal fallbacks, for native light/dark theming.
+[pattern] anchor-line-to-block: markdown-it block tokens carry `.map` → emitted as `data-source-line`/`data-source-end-line` (1-based); `src/lib/markdown/anchor.ts` maps a thread's `threadContext.rightFileStart.line` to the exact or closest-preceding rendered block.
 
 # ── Dev loop / preview ──
 
 [pattern] preview-auth: drive the user's authed Edge via `playwright-cli open --browser msedge --persistent --profile "$HOME/Library/Application Support/Microsoft Edge" <url>`. See the preview-in-devops skill.
 [gotcha] edge-cdp-port: --remote-debugging-port is blocked on Edge's default profile; use Playwright's persistent-profile launch (pipe CDP) instead.
 [pattern] hmr-loop: `pnpm dev:extension` (WXT) gives hot-reload in a separate `.dev-profile` (sign into ADO once there). Auth there is separate from the user's main Edge profile.
+[gotcha] playwright-load-extension: to load the built extension into the user's authed Edge, use a gitignored `playwright-cli.local.json` (browser.launchOptions.channel=msedge + args `--load-extension`/`--disable-extensions-except` with ABSOLUTE paths to `.output/chrome-mv3`) AND pass `--persistent --profile` flags — config `userDataDir` alone yields `<in-memory>`/no auth.
+[gotcha] playwright-main-world: playwright-cli `eval`/console only sees the page's main world, not the content-script isolated world — to debug the content script, surface state/errors into the DOM (e.g. read the island's `shadowRoot`).
