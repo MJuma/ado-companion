@@ -28,7 +28,7 @@ has_version_bump() {
 
 # PR mode — require a consumed changeset (version bump) for extension changes
 if [[ "$MODE" == "pr" ]]; then
-    TARGET_REF="origin/${GITHUB_BASE_REF:-main}"
+    TARGET_REF="origin/${GITHUB_BASE_REF:-master}"
 
     if ! git rev-parse --verify "$TARGET_REF" >/dev/null 2>&1; then
         echo "❌ Cannot resolve target ref '${TARGET_REF}'. Ensure fetch-depth: 0."
