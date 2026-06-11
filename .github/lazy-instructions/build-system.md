@@ -8,7 +8,6 @@
   { "extends": ["../../tsconfig.base.json", "./.wxt/tsconfig.json"], ... }
   ```
   Order matters: WXT's generated config is last so its module/jsx settings win. The file then sets `jsx: "preserve"` + `jsxImportSource: "solid-js"` directly (these always win over `extends`), and `include: ["src", ".wxt"]` so WXT's ambient types are picked up.
-- TypeScript 6 — implicit `any` and many sharp edges are errors.
 - Build pattern: `wxt prepare && tsc --noEmit && wxt build` (typecheck, then bundle).
 
 ## Vite

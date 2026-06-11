@@ -1,6 +1,6 @@
 # WXT Extension
 
-This extension is built with [WXT](https://wxt.dev) 0.20. WXT wraps Vite, generates the manifest, and handles cross-browser builds.
+Built with [WXT](https://wxt.dev) 0.20 (`packages/extension/wxt.config.ts`).
 
 ## Config
 

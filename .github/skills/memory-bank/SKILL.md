@@ -5,31 +5,13 @@ description: Query, add to, or maintain the ADO Companion memory bank of gotchas
 
 # Memory Bank
 
-The memory bank at `.github/memory-bank.md` is a shared, grep-searchable knowledge base. Use it to avoid repeating past mistakes and to preserve discoveries for future agents.
+`.github/memory-bank.md` is a grep-searchable log of repo-specific facts. Format: one line per entry — `[tag] topic: description` — under a `# ── Section ──` header.
 
-## Querying
+## Query
 
-Search by tag:
 ```bash
-grep '\[gotcha\]' .github/memory-bank.md
-grep '\[decision\]' .github/memory-bank.md
-grep '\[issue\]' .github/memory-bank.md
-grep '\[perf\]' .github/memory-bank.md
-grep '\[pattern\]' .github/memory-bank.md
-grep '\[data\]' .github/memory-bank.md
-```
-
-Search by topic:
-```bash
-grep -i 'wxt' .github/memory-bank.md
-grep -i 'fluent' .github/memory-bank.md
-grep -i 'solid' .github/memory-bank.md
-grep -i 'release' .github/memory-bank.md
-```
-
-Combine tag + topic:
-```bash
-grep '\[gotcha\].*shadow' .github/memory-bank.md
+grep '\[gotcha\]' .github/memory-bank.md      # by tag
+grep -i 'fluent' .github/memory-bank.md        # by topic
 ```
 
 ## Adding Entries
@@ -58,27 +40,3 @@ Append to the appropriate section in `.github/memory-bank.md`. Follow the format
 - **Be factual**: only add what you've verified. Cite files if helpful.
 - **Use kebab-case topics**: `wxt-import-paths`, `solid-shadow-events`.
 - **Place in the right section**: find the `# ── … ──` header and add below it; create a new section if none fits.
-
-### Example
-
-```bash
-# Append to the WXT section:
-echo '[gotcha] zip-output: wxt zip writes to packages/extension/.output/, not the repo root.' >> .github/memory-bank.md
-```
-
-Or use the edit tool to place it in the right section.
-
-## Removing Entries
-
-Remove entries that are no longer true (e.g. a bug was fixed). Use the edit tool to delete the line. Note non-obvious removals:
-
-```
-# Removed: [gotcha] old-thing — fixed in <commit>
-```
-
-## When to Use
-
-- **Before starting any task**: search for your topic area. 5 seconds of grep can save 30 minutes.
-- **When you hit surprising behavior**: add it immediately, not at the end of the session.
-- **When you fix a bug**: document the root cause as an `[issue]`.
-- **When you make a design choice**: document the reasoning as a `[decision]`.

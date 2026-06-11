@@ -1,6 +1,6 @@
 # UI Components (SolidJS + Fluent Web Components)
 
-The UI is **SolidJS** rendering **Fluent UI Web Components** (`@fluentui/web-components`, framework-agnostic custom elements). Solid has first-class custom-element support, so the two pair cleanly.
+The UI is **SolidJS** rendering **Fluent UI Web Components** (`@fluentui/web-components`, framework-agnostic custom elements).
 
 > Versions are pre-release and pinned in the catalog: `@fluentui/web-components` `3.0.0-rc.24`, `@fluentui/tokens` `1.0.0-alpha.23`. Bump deliberately.
 

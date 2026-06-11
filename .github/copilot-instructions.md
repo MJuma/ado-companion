@@ -42,14 +42,11 @@ Do NOT use `npm install` or `npx` directly. Use `pnpm install` and `pnpm run <sc
 
 The WXT dev server (`pnpm dev:extension`) is managed by the user. If you need it started or restarted, ask the user — do not start or stop it yourself. **Trust the build, not the dev server:** run `pnpm build` (which runs `tsc --noEmit`) to verify correctness.
 
-## Dependency Catalogs
+## Adding a dependency
 
-Common dependency versions live in the `catalog:` section of `pnpm-workspace.yaml`. Projects reference them with `"catalog:"` (runtime) or `"catalog:development"` (dev) instead of hardcoding versions.
-
-When adding a dependency:
 1. Add the version to `catalog:` / `catalogs.development` in `pnpm-workspace.yaml`.
 2. Add `"package-name": "catalog:"` to the package's `package.json`.
-3. Run `pnpm install`.
+3. `pnpm install`.
 
 ## Linting and Formatting
 
@@ -86,41 +83,16 @@ Key patterns:
 - `console.error`/`console.warn` are suppressed per-test in `test-setup.ts`; keep test runs free of stderr noise.
 - Keep `import` statements above any `vi.mock()` calls.
 
-## Commit Conventions
+## Git workflow
 
-[Conventional Commits](https://www.conventionalcommits.org/):
-```
-<type>(<optional scope>): <description>
-```
-Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-
-## Branch Naming
-
-When creating a branch on this repo, use:
-```
-dev/<alias>/<feature-name>
-```
-- `<alias>` is the author's short alias (e.g. the user's domain alias, not their full name or email).
-- `<feature-name>` is a short, kebab-case description (e.g. `add-dark-theme`, `fix-content-injection`).
-
-**Agents must follow this convention for any branch they create.** Confirm the user's alias if it isn't known from prior context (e.g. `git config user.email`, existing branches) — do not invent one. The base branch is `master`.
-
-## Worktrees for new work
-
-**Always create a worktree for new work** rather than running `git checkout` in the main clone, so multiple agents (and humans) can work simultaneously without stomping on each other's `node_modules`, build output, dev server, or working tree.
-
-```bash
-git fetch --prune origin
-git worktree add ./worktrees/<feature-name> -b dev/<alias>/<feature-name> origin/master
-cd ./worktrees/<feature-name>
-pnpm install
-```
-
-- The worktree lives in `worktrees/<feature-name>`.
-- Each worktree has its own `node_modules` — `pnpm install` after creating it (this also runs `wxt prepare`).
-- Clean up when merged: `git worktree remove ./worktrees/<feature-name>` then `git branch -d dev/<alias>/<feature-name>`.
-
-Use `git worktree list` to see active worktrees.
+- Base branch: `master`.
+- Branch names: `dev/<alias>/<feature-name>` (kebab-case). Confirm the user's alias from context (`git config user.email`, existing branches) — don't invent one.
+- Do new work in a worktree so parallel agents don't collide:
+  ```bash
+  git worktree add ./worktrees/<feature-name> -b dev/<alias>/<feature-name> origin/master
+  cd ./worktrees/<feature-name> && pnpm install   # pnpm install runs wxt prepare
+  ```
+- Commit messages follow Conventional Commits (match the existing `git log`).
 
 ## Changesets & Publishing
 
@@ -136,40 +108,17 @@ Versioning is managed with [@changesets/cli](https://github.com/changesets/chang
 
 On push to `master`, `release.yml` detects the new version, builds, zips, and creates the GitHub Release automatically.
 
-## Boy Scouts Rule
+## Lazy-loaded docs
 
-Always leave the code better than you found it. When working in a file and you notice a bug, a missing type annotation, a stale comment, an unused import, or any other small improvement, include the fix alongside your current changes as long as it doesn't cause an undue burden on the task. Similarly, when linting or building surfaces warnings unrelated to your task that can be reasonably fixed, address them.
+Load `@lazy-instructions/<file>` (→ `.github/lazy-instructions/`) only when relevant to the task:
 
-**This rule takes precedence over any generic "don't fix pre-existing issues" guidance.** If you are already modifying a file and encounter fixable issues, fix them in the same change.
-
-## Efficient Context Usage
-
-When reading or inspecting files, prefer tools that extract only what you need over pulling entire files into context.
-
-- Use `rg` (ripgrep) to search for patterns instead of reading whole files.
-- Use `jq` to query fields from large JSON files.
-- Use `sed`/`head`/`tail` to read specific line ranges.
-- Avoid reading entire large files (lock files, generated `.wxt/` output, etc.).
-- When you must read a file, prefer targeted view ranges.
-
-## Additional Resources
-
-When you encounter a `@lazy-instructions/...` reference, load it on a need-to-know basis. The prefix maps to `.github/lazy-instructions/`. Do NOT preemptively load everything — lazy-load based on actual need.
-
-- WXT extension specifics (entrypoints, manifest, imports, MV2/MV3, prepare): @lazy-instructions/wxt.md
-- App structure (directory layout, content-script injection, popup/background): @lazy-instructions/app-structure.md
-- UI components (Fluent Web Components + Solid, theming, Shadow DOM): @lazy-instructions/ui-components.md
-- Build system (WXT/Vite, TypeScript, oxlint, vitest, tsconfig composition): @lazy-instructions/build-system.md
-- Testing (vitest, WxtVitest, fakeBrowser, coverage scope): @lazy-instructions/testing.md
-- Releasing (changesets, GitHub Release artifacts, docs install page, store/AMO plans): @lazy-instructions/releasing.md
+- `@lazy-instructions/wxt.md` — WXT config, import paths, MV2/MV3, `wxt prepare`, build/zip outputs
+- `@lazy-instructions/app-structure.md` — directory layout, content-script injection, where to add things
+- `@lazy-instructions/ui-components.md` — Fluent Web Components + Solid, JSX typings, `on:click`, theming
+- `@lazy-instructions/build-system.md` — tsconfig composition, oxlint command, CI ordering
+- `@lazy-instructions/testing.md` — vitest + WxtVitest + fakeBrowser, coverage scope
+- `@lazy-instructions/releasing.md` — changeset flow, release.yml, install-page assets
 
 ## Memory Bank
 
-The file `.github/memory-bank.md` is a grep-searchable knowledge base of gotchas, decisions, issues, patterns, and data facts accumulated across sessions. Tags: `[gotcha]`, `[decision]`, `[issue]`, `[perf]`, `[pattern]`, `[data]`.
-
-**Use it liberally:**
-- **Before starting work**: search it for your topic (`grep -i 'fluent' .github/memory-bank.md`, `grep '\[gotcha\]' .github/memory-bank.md`).
-- **During work**: when you discover a non-obvious fact or workaround, add it immediately.
-- **After resolving an issue**: document what went wrong and how you fixed it as an `[issue]` entry.
-
-See the `memory-bank` skill (`.github/skills/memory-bank/SKILL.md`) for the exact format. Keep entries factual, concise, and verifiable.
+Before starting, grep `.github/memory-bank.md` for repo-specific facts (tags: `[gotcha]` `[decision]` `[issue]` `[perf]` `[pattern]` `[data]`). Add to it when you discover a non-obvious fact. Format: see the `memory-bank` skill.

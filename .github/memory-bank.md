@@ -6,13 +6,6 @@ A grep-searchable knowledge base of gotchas, decisions, issues, patterns, and da
 
 **Tags:** `[gotcha]` (will bite you), `[decision]` (deliberate choice + rationale), `[issue]` (bug + fix), `[perf]` (perf insight), `[pattern]` (convention to follow), `[data]` (fact about deps/data).
 
-Search examples:
-```bash
-grep '\[gotcha\]' .github/memory-bank.md
-grep -i 'fluent' .github/memory-bank.md
-grep -i 'wxt' .github/memory-bank.md
-```
-
 # ── Build & Tooling ──
 
 [decision] stack: UI is SolidJS + Fluent Web Components on WXT — azure-devops-ui is React-16-only and Fluent React v9 is heavier; Solid pairs cleanly with framework-agnostic web components.

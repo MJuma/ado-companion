@@ -23,9 +23,7 @@ The stable asset names are what the docs install page links to (`/releases/lates
 
 ## Docs install page
 
-`docs/guide/install.md` has per-browser download buttons + load instructions:
-- **Chrome / Edge**: download zip → unzip → Developer mode → Load unpacked (off-store `.crx` installs are blocked).
-- **Firefox**: download zip → `about:debugging` → Load Temporary Add-on (temporary until restart).
+The per-browser install steps live in `docs/guide/install.md`; its download buttons point at the stable asset names above.
 
 ## Not yet wired (planned)
 
