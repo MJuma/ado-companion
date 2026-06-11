@@ -18,9 +18,12 @@
     "dependencies": {
         "@fluentui/tokens": "catalog:",
         "@fluentui/web-components": "catalog:",
+        "dompurify": "catalog:",
+        "markdown-it": "catalog:",
         "solid-js": "catalog:"
     },
     "devDependencies": {
+        "@types/markdown-it": "catalog:development",
         "@types/node": "catalog:development",
         "@vitest/coverage-v8": "catalog:development",
         "@wxt-dev/module-solid": "catalog:development",
