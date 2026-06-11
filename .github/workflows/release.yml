@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check version bump
+        id: version
+        run: |
+          VERSION=$(bash packages/scripts/check-changeset.sh version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          TAG="v${VERSION}"
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  Tag ${TAG} already exists — skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "📦 New version ${VERSION} — will create release ${TAG}."
+          fi
+
+      - name: Build, lint & test
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          pnpm build
+          pnpm lint
+          pnpm test
+
+      - name: Package extensions
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          pnpm zip
+          pnpm zip:firefox
+          OUT=packages/extension/.output
+          V="${{ steps.version.outputs.version }}"
+          cp "${OUT}/ado-companion-extension-${V}-chrome.zip" "${OUT}/ado-companion-chrome.zip"
+          cp "${OUT}/ado-companion-extension-${V}-firefox.zip" "${OUT}/ado-companion-firefox.zip"
+          ls -la "${OUT}"/*.zip
+
+      - name: Extract changelog notes
+        if: steps.version.outputs.exists != 'true'
+        id: changelog
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          NOTES=$(awk "/^## ${V}([^0-9]|\$)/{f=1;next} /^## /{if(f)exit} f" packages/extension/CHANGELOG.md)
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OUT=packages/extension/.output
+          V="${{ steps.version.outputs.version }}"
+          gh release create "v${V}" \
+            "${OUT}/ado-companion-chrome.zip" \
+            "${OUT}/ado-companion-firefox.zip" \
+            --title "ADO Companion v${V}" \
+            --notes "${{ steps.changelog.outputs.notes }}"

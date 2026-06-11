@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+*.tsbuildinfo
+
+# WXT
+.output
+.wxt
+stats.html
+
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache

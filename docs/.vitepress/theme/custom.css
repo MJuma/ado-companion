@@ -1,0 +1,33 @@
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.download-card {
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 12px;
+    padding: 20px;
+    background: var(--vp-c-bg-soft);
+}
+
+.download-card h3 {
+    margin-top: 0;
+}
+
+a.download-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--vp-c-brand-1);
+    color: var(--vp-c-white) !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+a.download-btn:hover {
+    background: var(--vp-c-brand-2);
+}

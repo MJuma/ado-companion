@@ -1,0 +1,40 @@
+{
+    "name": "ado-companion",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@10.32.1",
+    "engines": {
+        "node": ">=22"
+    },
+    "scripts": {
+        "build": "pnpm -r run build",
+        "lint": "pnpm -r run lint",
+        "test": "pnpm -r run test",
+        "build:extension": "pnpm --filter ado-companion-extension run build",
+        "build:firefox": "pnpm --filter ado-companion-extension run build:firefox",
+        "lint:extension": "pnpm --filter ado-companion-extension run lint",
+        "test:extension": "pnpm --filter ado-companion-extension run test",
+        "dev:extension": "pnpm --filter ado-companion-extension run dev",
+        "dev:firefox": "pnpm --filter ado-companion-extension run dev:firefox",
+        "zip": "pnpm --filter ado-companion-extension run zip",
+        "zip:firefox": "pnpm --filter ado-companion-extension run zip:firefox",
+        "docs:dev": "vitepress dev docs",
+        "docs:build": "vitepress build docs",
+        "docs:preview": "vitepress preview docs",
+        "changeset": "changeset",
+        "changeset:version": "changeset version"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "esbuild",
+            "oxlint-tsgolint",
+            "@oxlint-tsgolint/darwin-arm64",
+            "@oxlint-tsgolint/linux-x64",
+            "@oxlint-tsgolint/linux-arm64"
+        ]
+    },
+    "devDependencies": {
+        "@changesets/cli": "catalog:development",
+        "vitepress": "^1.6.4"
+    }
+}

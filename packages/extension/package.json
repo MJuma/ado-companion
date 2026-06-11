@@ -1,0 +1,35 @@
+{
+    "name": "ado-companion-extension",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "postinstall": "wxt prepare",
+        "dev": "wxt",
+        "dev:firefox": "wxt -b firefox",
+        "build": "wxt prepare && tsc --noEmit && wxt build",
+        "build:firefox": "wxt prepare && tsc --noEmit && wxt build -b firefox",
+        "zip": "wxt zip",
+        "zip:firefox": "wxt zip -b firefox",
+        "compile": "tsc --noEmit",
+        "lint": "oxlint -c ../../oxlintrc.json --tsconfig tsconfig.lint.json --type-aware src/",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@fluentui/tokens": "catalog:",
+        "@fluentui/web-components": "catalog:",
+        "solid-js": "catalog:"
+    },
+    "devDependencies": {
+        "@types/node": "catalog:development",
+        "@vitest/coverage-v8": "catalog:development",
+        "@wxt-dev/module-solid": "catalog:development",
+        "jsdom": "catalog:development",
+        "oxlint": "catalog:development",
+        "oxlint-tsgolint": "catalog:development",
+        "typescript": "catalog:development",
+        "vite": "catalog:development",
+        "vitest": "catalog:development",
+        "wxt": "catalog:development"
+    }
+}

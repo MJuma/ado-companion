@@ -1,0 +1,21 @@
+packages:
+  - 'packages/*'
+
+catalog:
+  '@fluentui/web-components': 3.0.0-rc.24
+  '@fluentui/tokens': 1.0.0-alpha.23
+  solid-js: 1.9.13
+
+catalogs:
+  development:
+    '@changesets/cli': 2.31.0
+    '@types/node': 25.6.0
+    '@wxt-dev/module-solid': 1.1.4
+    jsdom: 29.0.2
+    oxlint: 1.59.0
+    oxlint-tsgolint: 0.20.0
+    typescript: 6.0.2
+    vite: 8.0.8
+    vitest: 4.1.4
+    '@vitest/coverage-v8': 4.1.4
+    wxt: 0.20.26

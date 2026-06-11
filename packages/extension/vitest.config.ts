@@ -1,0 +1,40 @@
+import { defineConfig } from 'vitest/config';
+import { WxtVitest } from 'wxt/testing';
+
+export default defineConfig({
+    plugins: [WxtVitest()],
+    test: {
+        globals: false,
+        environment: 'jsdom',
+        include: ['src/**/*.spec.{ts,tsx}'],
+        exclude: ['**/node_modules/**', '**/.{idea,git,cache,output,temp,wxt}/**'],
+        passWithNoTests: false,
+        retry: 0,
+        setupFiles: ['./src/test-setup.ts'],
+        typecheck: {
+            enabled: true,
+            tsconfig: 'tsconfig.spec.json',
+        },
+        coverage: {
+            enabled: true,
+            provider: 'v8',
+            reporter: ['text', 'cobertura'],
+            // Coverage is enforced on pure logic. Entrypoints and UI components
+            // are DOM/browser glue, validated via build + manual testing.
+            include: ['src/**/*.{ts,tsx}'],
+            exclude: [
+                '**/*.d.ts',
+                '**/*.spec.{ts,tsx}',
+                '**/*.mock.ts',
+                'src/entrypoints/**',
+                'src/app/**',
+            ],
+            thresholds: {
+                statements: 85,
+                branches: 80,
+                functions: 85,
+                lines: 85,
+            },
+        },
+    },
+});
