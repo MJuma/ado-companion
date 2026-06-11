@@ -1,19 +1,26 @@
-import { createResource, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
 
 import { getFileContent } from '../../lib/ado/items';
+import { getPrApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
+import { isFileThread } from '../../lib/ado/pr-types';
+import type { CommentThread } from '../../lib/ado/pr-types';
+import { listThreads } from '../../lib/ado/threads';
+import { anchorThreads } from '../../lib/markdown/anchor';
 import { renderMarkdown } from '../../lib/markdown/render';
+
+import { CommentCard } from './CommentCard';
 
 interface ReviewViewProps {
     context: PrContext;
 }
 
-/**
- * The Review document: fetches the PR file at its source commit and renders it
- * (read-only) with source-line anchoring. The comment rail is added in Phase 4.
- */
+function threadLine(thread: CommentThread): number {
+    return thread.threadContext?.rightFileStart?.line ?? Number.MAX_SAFE_INTEGER;
+}
+
 export function ReviewView(props: ReviewViewProps) {
-    const [doc] = createResource(
+    const [html] = createResource(
         () => props.context,
         async (context): Promise<string | null> => {
             const markdown = await getFileContent(context);
@@ -21,21 +28,163 @@ export function ReviewView(props: ReviewViewProps) {
         },
     );
 
+    const [threads] = createResource(
+        () => props.context,
+        async (context): Promise<CommentThread[]> => {
+            const all = await listThreads(getPrApiBaseUrl(context));
+            return all
+                .filter((thread) => isFileThread(thread, context.filePath))
+                .filter((thread) => Boolean(thread.threadContext?.rightFileStart))
+                .sort((a, b) => threadLine(a) - threadLine(b));
+        },
+    );
+
+    let docEl: HTMLDivElement | undefined;
+    let railEl: HTMLDivElement | undefined;
+    const [activeId, setActiveId] = createSignal<number | null>(null);
+
+    // Highlight rendered blocks that carry comments, once doc + threads are ready.
+    createEffect(() => {
+        const list = threads();
+        const rendered = !html.loading && html();
+        if (!docEl || !list || !rendered) {
+            return;
+        }
+        requestAnimationFrame(() => {
+            const root = docEl;
+            if (!root) {
+                return;
+            }
+            const blocks = Array.from(root.querySelectorAll<HTMLElement>('[data-source-line]'));
+            const lineToEl = new Map<number, HTMLElement>();
+            const blockLines: number[] = [];
+            for (const block of blocks) {
+                const line = Number(block.dataset['sourceLine']);
+                if (Number.isNaN(line)) {
+                    continue;
+                }
+                blockLines.push(line);
+                if (!lineToEl.has(line)) {
+                    lineToEl.set(line, block);
+                }
+            }
+            const anchored = anchorThreads(
+                list.map((thread) => ({
+                    id: thread.id,
+                    line: thread.threadContext?.rightFileStart?.line ?? null,
+                })),
+                blockLines,
+            );
+            for (const { id, anchorLine } of anchored) {
+                if (anchorLine === null) {
+                    continue;
+                }
+                const el = lineToEl.get(anchorLine);
+                if (!el) {
+                    continue;
+                }
+                el.classList.add('acr-anchored');
+                if (!el.dataset['threadId']) {
+                    el.dataset['threadId'] = String(id);
+                }
+            }
+        });
+    });
+
+    // Reflect the active thread on its anchored block.
+    createEffect(() => {
+        const id = activeId();
+        if (!docEl) {
+            return;
+        }
+        for (const el of docEl.querySelectorAll('.acr-anchored--active')) {
+            el.classList.remove('acr-anchored--active');
+        }
+        if (id === null) {
+            return;
+        }
+        docEl.querySelector(`[data-thread-id="${id}"]`)?.classList.add('acr-anchored--active');
+    });
+
+    function focusThread(threadId: number, scrollTo: 'block' | 'card'): void {
+        setActiveId(threadId);
+        const selector = `[data-thread-id="${threadId}"]`;
+        const target =
+            scrollTo === 'block'
+                ? docEl?.querySelector<HTMLElement>(selector)
+                : railEl?.querySelector<HTMLElement>(selector);
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function onDocClick(event: MouseEvent): void {
+        const block = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-thread-id]');
+        if (!block) {
+            return;
+        }
+        const id = Number(block.dataset['threadId']);
+        if (!Number.isNaN(id)) {
+            focusThread(id, 'card');
+        }
+    }
+
     return (
         <div class="ado-companion-review">
-            <Show when={doc.loading}>
+            <Show when={html.loading}>
                 <div class="ado-companion-review__status">Loading…</div>
             </Show>
-            <Show when={doc.error}>
+            <Show when={html.error}>
                 <div class="ado-companion-review__status">Failed to load file content.</div>
             </Show>
-            <Show when={!doc.loading && !doc.error}>
+            <Show when={!html.loading && !html.error}>
                 <Show
-                    when={doc()}
+                    when={html()}
                     fallback={<div class="ado-companion-review__status">No content.</div>}
                 >
-                    {(html) => (
-                        <div class="ado-companion-review__doc markdown-content" innerHTML={html()} />
+                    {(docHtml) => (
+                        <div class="acr-layout">
+                            <div
+                                class="acr-doc markdown-content"
+                                ref={(el) => {
+                                    docEl = el;
+                                }}
+                                innerHTML={docHtml()}
+                                on:click={onDocClick}
+                            />
+                            <div
+                                class="acr-rail"
+                                ref={(el) => {
+                                    railEl = el;
+                                }}
+                            >
+                                <Show
+                                    when={threads()}
+                                    fallback={
+                                        <div class="acr-rail__status">Loading comments…</div>
+                                    }
+                                >
+                                    {(list) => (
+                                        <Show
+                                            when={list().length > 0}
+                                            fallback={
+                                                <div class="acr-rail__status">
+                                                    No comments on this file.
+                                                </div>
+                                            }
+                                        >
+                                            <For each={list()}>
+                                                {(thread) => (
+                                                    <CommentCard
+                                                        thread={thread}
+                                                        active={activeId() === thread.id}
+                                                        onActivate={(id) => focusThread(id, 'block')}
+                                                    />
+                                                )}
+                                            </For>
+                                        </Show>
+                                    )}
+                                </Show>
+                            </div>
+                        </div>
                     )}
                 </Show>
             </Show>

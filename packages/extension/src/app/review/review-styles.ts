@@ -35,4 +35,48 @@ export const reviewStyles = `
 .markdown-content img { max-width: 100%; }
 .markdown-content a { color: var(--communication-foreground, #0067b8); text-decoration: none; }
 .markdown-content a:hover { text-decoration: underline; }
+
+/* Two-pane layout: rendered doc + comment rail */
+.acr-layout { display: flex; align-items: flex-start; gap: 24px; min-height: 100%; }
+.acr-doc { flex: 1 1 auto; min-width: 0; }
+.acr-rail {
+    flex: 0 0 320px;
+    align-self: stretch;
+    border-left: 1px solid rgba(var(--palette-neutral-20, 224, 224, 224), .5);
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.acr-rail__status { color: var(--text-secondary-color, #6b6b6b); font-size: 13px; padding: 8px 0; }
+
+/* Anchored blocks in the rendered doc */
+.acr-anchored { cursor: pointer; box-shadow: -6px 0 0 rgba(var(--palette-neutral-30, 200, 200, 200), .7); }
+.acr-anchored:hover { box-shadow: -6px 0 0 var(--communication-foreground, #0067b8); }
+.acr-anchored--active {
+    box-shadow: -6px 0 0 var(--communication-foreground, #0067b8);
+    background: rgba(var(--palette-neutral-8, 0, 0, 0), .35);
+    border-radius: 2px;
+}
+
+/* Comment cards */
+.acr-card {
+    border: 1px solid rgba(var(--palette-neutral-20, 224, 224, 224), .6);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    background: rgba(var(--palette-neutral-4, 250, 250, 250), .5);
+}
+.acr-card--active { border-color: var(--communication-foreground, #0067b8); }
+.acr-card--resolved { opacity: .6; }
+.acr-card__status { display: inline-block; font-size: 11px; font-weight: 600; color: var(--text-secondary-color, #6b6b6b); margin-bottom: 6px; }
+.acr-comment { margin-top: 10px; }
+.acr-comment:first-of-type { margin-top: 0; }
+.acr-comment__head { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.acr-comment__avatar { width: 20px; height: 20px; border-radius: 50%; flex: 0 0 auto; }
+.acr-comment__author { font-weight: 600; }
+.acr-comment__body { font-size: 13px; }
+.acr-comment__body > :first-child { margin-top: 0; }
+.acr-comment__body > :last-child { margin-bottom: 0; }
 `;
