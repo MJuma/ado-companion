@@ -216,7 +216,7 @@ export const reviewStyles = `
     cursor: pointer;
     box-shadow: 0 1px 5px rgba(0, 0, 0, .22);
 }
-.acr-sel-btn:hover { background: rgba(var(--palette-neutral-8, 0, 0, 0), .25); }
+.acr-sel-btn:hover { border-color: var(--communication-foreground, #0067b8); color: var(--communication-foreground, #0067b8); box-shadow: 0 2px 10px rgba(0, 0, 0, .3); }
 
 /* Floating composer popover anchored near the selection */
 .acr-popover {

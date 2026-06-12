@@ -60,7 +60,6 @@ export function createReviewEnhancer(): SurfaceEnhancer {
 
             let island: HTMLElement | null = null;
             let dispose: (() => void) | null = null;
-            let hiddenSiblings: HTMLElement[] = [];
             let savedMainLabel: string | null = null;
             let savedMainIcon: string | null = null;
 
@@ -114,10 +113,6 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 dispose = null;
                 island?.remove();
                 island = null;
-                for (const el of hiddenSiblings) {
-                    el.style.removeProperty('display');
-                }
-                hiddenSiblings = [];
                 setMainButton(false);
                 markMenuItemSelected();
             }
@@ -132,15 +127,10 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 }
                 stickyPrId = context.pullRequestId;
 
-                // The overlay covers the native content; also hide it so it can't
-                // catch scroll/focus underneath.
-                hiddenSiblings = Array.from(pane.children).filter(
-                    (child): child is HTMLElement => child instanceof HTMLElement,
-                );
-                for (const el of hiddenSiblings) {
-                    el.style.display = 'none';
-                }
-
+                // Opaque overlay on top of ADO's native content. We deliberately do
+                // NOT hide the native content (display:none broke ADO's rendering
+                // across file/view switches and left blank panes) — the overlay
+                // simply covers it, so exiting always reveals it intact.
                 island = document.createElement('div');
                 island.dataset['adoCompanion'] = 'review-island';
                 island.dataset['file'] = context.filePath;

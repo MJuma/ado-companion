@@ -201,6 +201,28 @@ export function ReviewView(props: ReviewViewProps) {
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    // When ADO links to a specific comment (e.g. clicking it in the file tree
+    // sets ?discussionId=), scroll to and highlight that thread once it loads.
+    let focusedDiscussion: string | null = null;
+    createEffect(() => {
+        const list = threads();
+        layoutTick();
+        if (!list || list.length === 0) {
+            return;
+        }
+        const params = new URL(window.location.href).searchParams;
+        const wanted = params.get('discussionId') ?? params.get('activeDiscussionId');
+        if (!wanted || wanted === focusedDiscussion) {
+            return;
+        }
+        const id = Number(wanted);
+        if (Number.isNaN(id) || !list.some((thread) => thread.id === id)) {
+            return;
+        }
+        focusedDiscussion = wanted;
+        requestAnimationFrame(() => focusThread(id, 'block'));
+    });
+
     function readDocSelection(): SelectionAnchor | null {
         if (!docEl) {
             return null;
