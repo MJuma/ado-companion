@@ -222,6 +222,9 @@ export function ReviewView(props: ReviewViewProps) {
     let layoutEl: HTMLDivElement | undefined;
     let reviewEl: HTMLDivElement | undefined;
     const slotEls = new Map<number, HTMLElement>();
+    // thread id → its anchored doc block (so multiple threads on one block all
+    // keep a document anchor — a block only carries the first thread's id attr).
+    const threadAnchors = new Map<number, HTMLElement>();
     const [activeId, setActiveId] = createSignal<number | null>(null);
     const [selAnchor, setSelAnchor] = createSignal<SelectionAnchor | null>(null);
     const [composer, setComposer] = createSignal<SelectionAnchor | null>(null);
@@ -233,25 +236,43 @@ export function ReviewView(props: ReviewViewProps) {
     });
     onCleanup(() => resizeObserver.disconnect());
 
+    function clampRailWidth(width: number): number {
+        const maxWidth = layoutEl ? layoutEl.clientWidth - 360 : 900;
+        return Math.max(260, Math.min(width, Math.max(260, maxWidth)));
+    }
+
     // Drag the divider to resize the comment pane. Widening the rail narrows the
     // doc (which reflows), so the ResizeObserver re-aligns the cards.
+    let stopResize: (() => void) | null = null;
     function startResize(event: MouseEvent): void {
         event.preventDefault();
         const startX = event.clientX;
         const startWidth = railWidth();
-        const maxWidth = layoutEl ? layoutEl.clientWidth - 360 : 900;
         reviewEl?.classList.add('acr-resizing');
         const onMove = (moveEvent: MouseEvent): void => {
-            const next = startWidth - (moveEvent.clientX - startX);
-            setRailWidth(Math.max(260, Math.min(next, Math.max(260, maxWidth))));
+            setRailWidth(clampRailWidth(startWidth - (moveEvent.clientX - startX)));
         };
-        const onUp = (): void => {
+        stopResize = (): void => {
             document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('mouseup', stopResize as () => void);
             reviewEl?.classList.remove('acr-resizing');
+            stopResize = null;
         };
         document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+        document.addEventListener('mouseup', stopResize);
+    }
+    // Sweep drag listeners if the view unmounts mid-drag.
+    onCleanup(() => stopResize?.());
+
+    // Resize via keyboard (ArrowLeft widens the rail, ArrowRight narrows it).
+    function onDividerKeyDown(event: KeyboardEvent): void {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            setRailWidth((width) => clampRailWidth(width + 24));
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            setRailWidth((width) => clampRailWidth(width - 24));
+        }
     }
 
     // Re-align cards whenever the pane is resized.
@@ -270,9 +291,7 @@ export function ReviewView(props: ReviewViewProps) {
         const railTop = railEl.getBoundingClientRect().top;
         const placed = list
             .map((thread) => {
-                const block = docEl?.querySelector<HTMLElement>(
-                    `[data-thread-id="${thread.id}"]`,
-                );
+                const block = threadAnchors.get(thread.id);
                 const slot = slotEls.get(thread.id);
                 if (!slot) {
                     return null;
@@ -313,6 +332,7 @@ export function ReviewView(props: ReviewViewProps) {
             // Remove previous highlight marks (restoring clean text) and block
             // anchors so a filter/refetch change doesn't leave stale ones.
             unwrapHighlights(root, HIGHLIGHT_CLASS);
+            threadAnchors.clear();
             for (const stale of root.querySelectorAll<HTMLElement>('[data-thread-id]')) {
                 stale.classList.remove('acr-anchored', 'acr-anchored--active');
                 delete stale.dataset['threadId'];
@@ -351,6 +371,7 @@ export function ReviewView(props: ReviewViewProps) {
                 if (!el.dataset['threadId']) {
                     el.dataset['threadId'] = String(id);
                 }
+                threadAnchors.set(id, el);
                 const thread = byId.get(id);
                 const anchor = thread ? highlightFor(thread, lines) : null;
                 if (anchor) {
@@ -380,9 +401,12 @@ export function ReviewView(props: ReviewViewProps) {
         requestAnimationFrame(reposition);
     });
 
-    // Reflect the active thread on its anchored block + highlighted text.
+    // Reflect the active thread on its anchored block + highlighted text. Reads
+    // layoutTick so the classes are reapplied after each (re)anchor render — e.g.
+    // when a ?discussionId= focus is set before the doc finishes anchoring.
     createEffect(() => {
         const id = activeId();
+        layoutTick();
         if (!docEl) {
             return;
         }
@@ -392,7 +416,7 @@ export function ReviewView(props: ReviewViewProps) {
         if (id === null) {
             return;
         }
-        docEl.querySelector(`[data-thread-id="${id}"]`)?.classList.add('acr-anchored--active');
+        threadAnchors.get(id)?.classList.add('acr-anchored--active');
         for (const mark of docEl.querySelectorAll(`mark.acr-hl[data-thread-id="${id}"]`)) {
             mark.classList.add('acr-hl--active');
         }
@@ -400,11 +424,10 @@ export function ReviewView(props: ReviewViewProps) {
 
     function focusThread(threadId: number, scrollTo: 'block' | 'card'): void {
         setActiveId(threadId);
-        const selector = `[data-thread-id="${threadId}"]`;
         const target =
             scrollTo === 'block'
-                ? docEl?.querySelector<HTMLElement>(selector)
-                : railEl?.querySelector<HTMLElement>(selector);
+                ? threadAnchors.get(threadId)
+                : railEl?.querySelector<HTMLElement>(`[data-thread-id="${threadId}"]`);
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
@@ -563,16 +586,20 @@ export function ReviewView(props: ReviewViewProps) {
         void refetchThreads();
     }
 
+    // Dismiss the floating "add comment" button when the review pane itself
+    // scrolls (its selected text moves out from under the fixed button). The
+    // listener is bound directly to the pane (in its ref) because scroll events
+    // are composed:false and never escape the Shadow DOM to document. A non-
+    // capturing pane listener also ignores nested scrollers (code blocks).
     const onScroll = (): void => {
         setSelAnchor(null);
     };
     const onResize = (): void => {
         setLayoutTick((value) => value + 1);
     };
-    document.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onResize);
     onCleanup(() => {
-        document.removeEventListener('scroll', onScroll, true);
+        reviewEl?.removeEventListener('scroll', onScroll);
         window.removeEventListener('resize', onResize);
     });
 
@@ -581,6 +608,7 @@ export function ReviewView(props: ReviewViewProps) {
             class="ado-companion-review"
             ref={(el) => {
                 reviewEl = el;
+                el.addEventListener('scroll', onScroll, { passive: true });
             }}
         >
             <Show when={html.loading}>
@@ -605,6 +633,7 @@ export function ReviewView(props: ReviewViewProps) {
                                 <div
                                     class="acr-doc markdown-content"
                                     role="document"
+                                    tabindex="0"
                                     ref={(el) => {
                                         docEl = el;
                                         resizeObserver.observe(el);
@@ -619,8 +648,12 @@ export function ReviewView(props: ReviewViewProps) {
                                     role="separator"
                                     aria-orientation="vertical"
                                     aria-label="Resize comments pane"
+                                    aria-valuenow={railWidth()}
+                                    aria-valuemin={260}
+                                    tabindex="0"
                                     title="Drag to resize"
                                     on:mousedown={startResize}
+                                    on:keydown={onDividerKeyDown}
                                 />
                                 <div
                                     class="acr-rail"

@@ -61,6 +61,12 @@ export const reviewStyles = `
     width: 2px;
     background: var(--communication-foreground, #0067b8);
 }
+.acr-divider:focus-visible { outline: none; }
+.acr-divider:focus-visible::after {
+    width: 2px;
+    background: var(--communication-foreground, #0067b8);
+    box-shadow: 0 0 0 2px rgba(var(--palette-neutral-8, 0, 0, 0), .4);
+}
 .acr-rail {
     align-self: stretch;
     position: relative;
