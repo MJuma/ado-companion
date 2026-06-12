@@ -13,6 +13,22 @@ const VIEW_MENU_ID = '__bolt-changeViewerMode';
 const VIEW_CHEVRON_SELECTOR = '.repos-compare-toolbar .bolt-split-button-option';
 const VIEW_MAIN_SELECTOR = '.repos-compare-toolbar .bolt-split-button-main';
 const REVIEW_ITEM_ID = 'ado-companion-review-item';
+const HOST_CLASS = 'ado-companion-review-host';
+const HOST_STYLE_ID = 'ado-companion-host-style';
+
+// Hide ADO's native file content while Review overlays it, using visibility
+// (NOT display) so ADO keeps laying it out — display:none broke ADO's rendering
+// and left blank panes. Toggled via a class so there's no per-element tracking
+// to get out of sync; removing the class instantly restores everything.
+function ensureHostStyle(): void {
+    if (document.getElementById(HOST_STYLE_ID)) {
+        return;
+    }
+    const style = document.createElement('style');
+    style.id = HOST_STYLE_ID;
+    style.textContent = `.${HOST_CLASS} > :not([data-ado-companion="review-island"]) { visibility: hidden !important; }`;
+    document.head.appendChild(style);
+}
 
 // Keystrokes typed in the island must not reach ADO's document-level keyboard
 // handlers (which otherwise steal focus to the global search box).
@@ -60,6 +76,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
 
             let island: HTMLElement | null = null;
             let dispose: (() => void) | null = null;
+            let hostPane: HTMLElement | null = null;
             let savedMainLabel: string | null = null;
             let savedMainIcon: string | null = null;
 
@@ -113,6 +130,8 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 dispose = null;
                 island?.remove();
                 island = null;
+                hostPane?.classList.remove(HOST_CLASS);
+                hostPane = null;
                 setMainButton(false);
                 markMenuItemSelected();
             }
@@ -127,10 +146,12 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 }
                 stickyPrId = context.pullRequestId;
 
-                // Opaque overlay on top of ADO's native content. We deliberately do
-                // NOT hide the native content (display:none broke ADO's rendering
-                // across file/view switches and left blank panes) — the overlay
-                // simply covers it, so exiting always reveals it intact.
+                // Cover ADO's native content with an opaque overlay and hide that
+                // content (visibility, via a class) so ADO's inline comment threads
+                // don't bleed through — without breaking ADO's layout.
+                ensureHostStyle();
+                hostPane = pane;
+                pane.classList.add(HOST_CLASS);
                 island = document.createElement('div');
                 island.dataset['adoCompanion'] = 'review-island';
                 island.dataset['file'] = context.filePath;

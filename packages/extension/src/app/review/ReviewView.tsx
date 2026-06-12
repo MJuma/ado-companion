@@ -201,12 +201,12 @@ export function ReviewView(props: ReviewViewProps) {
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // When ADO links to a specific comment (e.g. clicking it in the file tree
-    // sets ?discussionId=), scroll to and highlight that thread once it loads.
+    // When ADO links to a specific comment (clicking it in the file tree sets
+    // ?discussionId=, without changing the file), scroll to and highlight that
+    // thread. Polled because a same-file click is a URL change with no remount.
     let focusedDiscussion: string | null = null;
-    createEffect(() => {
+    function focusFromUrl(): void {
         const list = threads();
-        layoutTick();
         if (!list || list.length === 0) {
             return;
         }
@@ -221,7 +221,16 @@ export function ReviewView(props: ReviewViewProps) {
         }
         focusedDiscussion = wanted;
         requestAnimationFrame(() => focusThread(id, 'block'));
+    }
+
+    createEffect(() => {
+        threads();
+        layoutTick();
+        focusFromUrl();
     });
+
+    const discussionPoll = window.setInterval(focusFromUrl, 500);
+    onCleanup(() => window.clearInterval(discussionPoll));
 
     function readDocSelection(): SelectionAnchor | null {
         if (!docEl) {
