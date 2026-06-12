@@ -13,7 +13,6 @@ export const reviewStyles = `
     padding: 16px 32px 64px;
 }
 .ado-companion-review__status { color: var(--text-secondary-color, #6b6b6b); padding: 32px; font-size: 14px; }
-.markdown-content { max-width: 980px; }
 .markdown-content > :first-child { margin-top: 0; }
 .markdown-content h1, .markdown-content h2 { border-bottom: 1px solid rgba(var(--palette-neutral-20, 224, 224, 224), .5); padding-bottom: .3em; }
 .markdown-content h1 { font-size: 1.8em; }
