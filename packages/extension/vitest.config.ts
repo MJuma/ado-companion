@@ -1,8 +1,12 @@
+import solid from 'vite-plugin-solid';
 import { defineConfig } from 'vitest/config';
 import { WxtVitest } from 'wxt/testing';
 
 export default defineConfig({
-    plugins: [WxtVitest()],
+    plugins: [solid(), WxtVitest()],
+    resolve: {
+        conditions: ['development', 'browser'],
+    },
     test: {
         globals: false,
         environment: 'jsdom',

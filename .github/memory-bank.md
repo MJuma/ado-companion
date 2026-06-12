@@ -18,6 +18,7 @@ A grep-searchable knowledge base of gotchas, decisions, issues, patterns, and da
 [gotcha] wxt-import-paths: WXT 0.20 — defineConfig from 'wxt' (NOT 'wxt/config'); defineBackground from 'wxt/utils/define-background'; defineContentScript from 'wxt/utils/define-content-script'; createShadowRootUi from 'wxt/utils/content-script-ui/shadow-root'.
 [gotcha] firefox-mv2-default: WXT builds Firefox as MV2 by default (.output/firefox-mv2); Chrome/Edge are MV3. Set manifestVersion config to target Firefox MV3.
 [data] host-perms: content script + host_permissions target https://dev.azure.com/* and https://*.visualstudio.com/*.
+[gotcha] content-script-single-file: WXT bundles each content script into ONE file (inlineDynamicImports) — `import()` inside the content script gets inlined, NOT code-split. So lazy-loading heavy deps (markdown-it+DOMPurify ≈ content.js 205KB) off the content script is not possible without a disproportionate refactor (main-world injectScript / messaging). Verified: dynamic import left content.js unchanged.
 
 # ── UI (Solid + Fluent) ──
 
@@ -30,6 +31,8 @@ A grep-searchable knowledge base of gotchas, decisions, issues, patterns, and da
 
 [decision] coverage-scope: coverage thresholds (85/80/85/85) are enforced on src/lib; src/entrypoints and src/app are excluded as DOM/extension glue.
 [pattern] test-browser: tests use WxtVitest + fakeBrowser from 'wxt/testing'; fakeBrowser.reset() runs in src/test-setup.ts; console.error/warn are suppressed there.
+[pattern] solid-component-tests: .spec.tsx component tests use @solidjs/testing-library; vitest.config.ts adds vite-plugin-solid + resolve.conditions ['development','browser'] so JSX transforms (WxtVitest alone does NOT). Call cleanup() in an explicit afterEach (globals:false → no auto-cleanup). Shared fixtures in src/app/review/fixtures.ts. Examples: CommentItem/CommentCard/CommentComposer.spec.tsx.
+[gotcha] test-unbound-method: oxlint flags `const {getByText}=render()` and `expect(mod.fn)` as unbound-method. Use `screen.getByText(…)` and import mocked fns by name (`import {fn}; expect(fn)`), not member access.
 
 # ── Releasing ──
 

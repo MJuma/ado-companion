@@ -23,6 +23,7 @@
         "solid-js": "catalog:"
     },
     "devDependencies": {
+        "@solidjs/testing-library": "catalog:development",
         "@types/markdown-it": "catalog:development",
         "@types/node": "catalog:development",
         "@vitest/coverage-v8": "catalog:development",
@@ -32,6 +33,7 @@
         "oxlint-tsgolint": "catalog:development",
         "typescript": "catalog:development",
         "vite": "catalog:development",
+        "vite-plugin-solid": "catalog:development",
         "vitest": "catalog:development",
         "wxt": "catalog:development"
     }
