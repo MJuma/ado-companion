@@ -31,6 +31,7 @@ export interface MentionCandidate {
     id: string;
     displayName: string;
     mail?: string;
+    imageUrl?: string;
 }
 
 interface IdentityPickerIdentity {
@@ -77,6 +78,9 @@ export async function searchIdentities(
                 id: identity.localId,
                 displayName: identity.displayName,
                 mail: identity.mail ?? identity.signInAddress,
+                // ADO's IdentityPicker no longer returns an image field; the legacy
+                // org-scoped identity image endpoint resolves an avatar from the GUID.
+                imageUrl: `${organizationUrl}/_api/_common/identityImage?id=${identity.localId}`,
             });
         }
     }

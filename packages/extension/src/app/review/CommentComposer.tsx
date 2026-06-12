@@ -244,10 +244,25 @@ export function CommentComposer(props: CommentComposerProps) {
                                     selectCandidate(candidate);
                                 }}
                             >
-                                <span class="acr-mentions__name">{candidate.displayName}</span>
-                                <Show when={candidate.mail}>
-                                    <span class="acr-mentions__mail">{candidate.mail}</span>
+                                <Show
+                                    when={candidate.imageUrl}
+                                    fallback={<span class="acr-mentions__avatar acr-mentions__avatar--blank" />}
+                                >
+                                    <img
+                                        class="acr-mentions__avatar"
+                                        src={candidate.imageUrl}
+                                        alt=""
+                                        on:error={(event) => {
+                                            event.currentTarget.style.display = 'none';
+                                        }}
+                                    />
                                 </Show>
+                                <span class="acr-mentions__text">
+                                    <span class="acr-mentions__name">{candidate.displayName}</span>
+                                    <Show when={candidate.mail}>
+                                        <span class="acr-mentions__mail">{candidate.mail}</span>
+                                    </Show>
+                                </span>
                             </li>
                         )}
                     </For>

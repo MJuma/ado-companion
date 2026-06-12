@@ -7,24 +7,7 @@ import { addReply, setThreadStatus } from '../../lib/ado/threads';
 import { CommentComposer } from './CommentComposer';
 import { CommentItem } from './CommentItem';
 import { ChevronIcon } from './Icons';
-
-const STATUS_LABELS: Record<string, string> = {
-    active: 'Active',
-    fixed: 'Resolved',
-    wontFix: "Won't fix",
-    closed: 'Closed',
-    byDesign: 'By design',
-    pending: 'Pending',
-    unknown: '',
-};
-
-const STATUS_OPTIONS: { value: ThreadStatus; label: string }[] = [
-    { value: ThreadStatus.Active, label: 'Active' },
-    { value: ThreadStatus.Fixed, label: 'Resolved' },
-    { value: ThreadStatus.WontFix, label: "Won't fix" },
-    { value: ThreadStatus.Closed, label: 'Closed' },
-    { value: ThreadStatus.ByDesign, label: 'By design' },
-];
+import { STATUS_LABELS, STATUS_OPTIONS } from './status';
 
 interface CommentCardProps {
     thread: CommentThread;

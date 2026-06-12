@@ -75,8 +75,18 @@ describe('searchIdentities', () => {
         const results = await searchIdentities('https://dev.azure.com/o', 'ja');
 
         expect(results).toEqual([
-            { id: 'g1', displayName: 'Jane Doe', mail: 'jane@x.com' },
-            { id: 'g2', displayName: 'Bob', mail: 'bob@x.com' },
+            {
+                id: 'g1',
+                displayName: 'Jane Doe',
+                mail: 'jane@x.com',
+                imageUrl: 'https://dev.azure.com/o/_api/_common/identityImage?id=g1',
+            },
+            {
+                id: 'g2',
+                displayName: 'Bob',
+                mail: 'bob@x.com',
+                imageUrl: 'https://dev.azure.com/o/_api/_common/identityImage?id=g2',
+            },
         ]);
         expect(fetchUrl(fetchMock)).toContain('/_apis/IdentityPicker/Identities');
         expect((fetchJsonBody(fetchMock) as { query: string }).query).toBe('ja');

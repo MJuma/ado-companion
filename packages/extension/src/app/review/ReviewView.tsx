@@ -7,19 +7,15 @@ import {
     onCleanup,
     Show,
 } from 'solid-js';
+import { createStore, reconcile } from 'solid-js/store';
 
 import { fetchCurrentUser } from '../../lib/ado/identities';
 import { getFileContent, getPrSourceCommit } from '../../lib/ado/items';
 import { getPrApiBaseUrl, getRepoApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
-import { ThreadStatus, isFileThread, isResolvedStatus } from '../../lib/ado/pr-types';
-import type { CommentThread } from '../../lib/ado/pr-types';
-import {
-    buildLineThreadContext,
-    createThread,
-    listThreads,
-    setThreadStatus,
-} from '../../lib/ado/threads';
+import { ThreadStatus, isFileThread } from '../../lib/ado/pr-types';
+import type { CommentThread, IdentityRef } from '../../lib/ado/pr-types';
+import { buildLineThreadContext, createThread, listThreads } from '../../lib/ado/threads';
 import { anchorThreads } from '../../lib/markdown/anchor';
 import { resolveImageSrc } from '../../lib/markdown/images';
 import { renderMarkdown } from '../../lib/markdown/render';
@@ -28,13 +24,13 @@ import { cacheMentionName } from '../../lib/review/mentions';
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
 import { CommentIcon } from './Icons';
+import { STATUS_OPTIONS } from './status';
 
-type StatusFilter = 'all' | 'active' | 'resolved';
+type StatusFilter = 'all' | ThreadStatus;
 
-const FILTERS: { value: StatusFilter; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'active', label: 'Active' },
-    { value: 'resolved', label: 'Resolved' },
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+    { value: 'all', label: 'All comments' },
+    ...STATUS_OPTIONS,
 ];
 
 interface ReviewViewProps {
@@ -50,6 +46,12 @@ interface SelectionAnchor {
 
 function threadLine(thread: CommentThread): number {
     return thread.threadContext?.rightFileStart?.line ?? Number.MAX_SAFE_INTEGER;
+}
+
+function threadAuthors(thread: CommentThread): IdentityRef[] {
+    return thread.comments
+        .filter((comment) => !comment.isDeleted)
+        .map((comment) => comment.author);
 }
 
 function shadowSelection(node: Node): Selection | null {
@@ -82,6 +84,17 @@ export function ReviewView(props: ReviewViewProps) {
         },
     );
 
+    // Mirror the fetched threads into a store and reconcile by id, so a refetch
+    // (after a like, reply, status change…) patches in place instead of remounting
+    // every card — no flash, and per-card UI state (collapse) survives.
+    const [store, setStore] = createStore<{ list: CommentThread[] }>({ list: [] });
+    createEffect(() => {
+        const list = threads();
+        if (list) {
+            setStore('list', reconcile(list, { key: 'id' }));
+        }
+    });
+
     const prBaseUrl = (): string => getPrApiBaseUrl(props.context);
 
     const [currentUser] = createResource(
@@ -95,29 +108,38 @@ export function ReviewView(props: ReviewViewProps) {
     );
 
     const [statusFilter, setStatusFilter] = createSignal<StatusFilter>('all');
-    const [resolvingAll, setResolvingAll] = createSignal(false);
+    const [personFilter, setPersonFilter] = createSignal('all');
     const [now, setNow] = createSignal(Date.now());
     const nowTimer = window.setInterval(() => setNow(Date.now()), 60_000);
     onCleanup(() => window.clearInterval(nowTimer));
 
-    const visibleThreads = createMemo<CommentThread[]>(() => {
-        const all = threads() ?? [];
-        const filter = statusFilter();
-        if (filter === 'all') {
-            return all;
+    // Distinct people who have commented, for the "by person" filter.
+    const people = createMemo<IdentityRef[]>(() => {
+        const byId = new Map<string, IdentityRef>();
+        for (const thread of store.list) {
+            for (const author of threadAuthors(thread)) {
+                if (author.id && !byId.has(author.id)) {
+                    byId.set(author.id, author);
+                }
+            }
         }
-        return all.filter((thread) =>
-            filter === 'resolved' ? isResolvedStatus(thread.status) : !isResolvedStatus(thread.status),
-        );
+        return [...byId.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
     });
 
-    const activeCount = createMemo(
-        () => (threads() ?? []).filter((thread) => !isResolvedStatus(thread.status)).length,
-    );
+    const visibleThreads = createMemo<CommentThread[]>(() => {
+        const status = statusFilter();
+        const person = personFilter();
+        return store.list.filter((thread) => {
+            const statusOk = status === 'all' || thread.status === status;
+            const personOk =
+                person === 'all' || threadAuthors(thread).some((author) => author.id === person);
+            return statusOk && personOk;
+        });
+    });
 
     // Resolve names for @<GUID> mentions from everyone who has commented.
     createEffect(() => {
-        for (const thread of threads() ?? []) {
+        for (const thread of store.list) {
             for (const comment of thread.comments) {
                 if (comment.author.id) {
                     cacheMentionName(comment.author.id, comment.author.displayName);
@@ -152,27 +174,9 @@ export function ReviewView(props: ReviewViewProps) {
         });
     });
 
-    async function resolveAll(): Promise<void> {
-        if (resolvingAll()) {
-            return;
-        }
-        const active = (threads() ?? []).filter((thread) => !isResolvedStatus(thread.status));
-        if (active.length === 0) {
-            return;
-        }
-        setResolvingAll(true);
-        try {
-            for (const thread of active) {
-                await setThreadStatus(prBaseUrl(), thread.id, ThreadStatus.Fixed);
-            }
-            void refetchThreads();
-        } finally {
-            setResolvingAll(false);
-        }
-    }
-
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
+    let toolbarEl: HTMLDivElement | undefined;
     const slotEls = new Map<number, HTMLElement>();
     const [activeId, setActiveId] = createSignal<number | null>(null);
     const [selAnchor, setSelAnchor] = createSignal<SelectionAnchor | null>(null);
@@ -211,9 +215,11 @@ export function ReviewView(props: ReviewViewProps) {
             .sort((a, b) => a.desired - b.desired);
 
         const next: Record<number, number> = {};
-        let cursor = 0;
+        // Start below the sticky toolbar so the first card isn't hidden behind it.
+        const headroom = toolbarEl ? toolbarEl.offsetHeight + 8 : 0;
+        let cursor = headroom;
         for (const item of placed) {
-            const base = Number.isFinite(item.desired) ? Math.max(item.desired, 0) : cursor;
+            const base = Number.isFinite(item.desired) ? Math.max(item.desired, headroom) : cursor;
             const top = Math.max(base, cursor);
             next[item.id] = top;
             cursor = top + item.height + 8;
@@ -316,8 +322,8 @@ export function ReviewView(props: ReviewViewProps) {
     // thread. Polled because a same-file click is a URL change with no remount.
     let focusedDiscussion: string | null = null;
     function focusFromUrl(): void {
-        const list = threads();
-        if (!list || list.length === 0) {
+        const list = store.list;
+        if (list.length === 0) {
             return;
         }
         const params = new URL(window.location.href).searchParams;
@@ -334,7 +340,7 @@ export function ReviewView(props: ReviewViewProps) {
     }
 
     createEffect(() => {
-        threads();
+        void store.list;
         layoutTick();
         focusFromUrl();
     });
@@ -467,40 +473,6 @@ export function ReviewView(props: ReviewViewProps) {
                 >
                     {(docHtml) => (
                         <>
-                            <div class="acr-toolbar" role="toolbar" aria-label="Review comments">
-                                <span class="acr-toolbar__count">
-                                    {(threads()?.length ?? 0)} thread
-                                    {(threads()?.length ?? 0) === 1 ? '' : 's'}
-                                </span>
-                                <span class="acr-toolbar__spacer" />
-                                <div class="acr-segmented" role="group" aria-label="Filter comments">
-                                    <For each={FILTERS}>
-                                        {(option) => (
-                                            <button
-                                                class="acr-seg"
-                                                classList={{
-                                                    'acr-seg--on': statusFilter() === option.value,
-                                                }}
-                                                type="button"
-                                                aria-pressed={statusFilter() === option.value}
-                                                on:click={() => setStatusFilter(option.value)}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        )}
-                                    </For>
-                                </div>
-                                <Show when={activeCount() > 0}>
-                                    <button
-                                        class="acr-btn"
-                                        type="button"
-                                        disabled={resolvingAll()}
-                                        on:click={() => void resolveAll()}
-                                    >
-                                        {resolvingAll() ? 'Resolving…' : 'Resolve all'}
-                                    </button>
-                                </Show>
-                            </div>
                             <div class="acr-layout">
                                 <div
                                     class="acr-doc markdown-content"
@@ -522,8 +494,65 @@ export function ReviewView(props: ReviewViewProps) {
                                         railEl = el;
                                     }}
                                 >
+                                    <div
+                                        class="acr-toolbar"
+                                        role="toolbar"
+                                        aria-label="Review comments"
+                                        ref={(el) => {
+                                            toolbarEl = el;
+                                            resizeObserver.observe(el);
+                                        }}
+                                    >
+                                        <span class="acr-toolbar__count">
+                                            {visibleThreads().length === store.list.length
+                                                ? `${store.list.length} ${store.list.length === 1 ? 'thread' : 'threads'}`
+                                                : `${visibleThreads().length} of ${store.list.length}`}
+                                        </span>
+                                        <span class="acr-toolbar__spacer" />
+                                        <select
+                                            class="acr-filter"
+                                            aria-label="Filter by status"
+                                            value={statusFilter()}
+                                            on:change={(event) =>
+                                                setStatusFilter(
+                                                    (event.currentTarget as HTMLSelectElement)
+                                                        .value as StatusFilter,
+                                                )
+                                            }
+                                        >
+                                            <For each={STATUS_FILTERS}>
+                                                {(option) => (
+                                                    <option value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                )}
+                                            </For>
+                                        </select>
+                                        <Show when={people().length > 0}>
+                                            <select
+                                                class="acr-filter"
+                                                aria-label="Filter by person"
+                                                value={personFilter()}
+                                                on:change={(event) =>
+                                                    setPersonFilter(
+                                                        (event.currentTarget as HTMLSelectElement)
+                                                            .value,
+                                                    )
+                                                }
+                                            >
+                                                <option value="all">All people</option>
+                                                <For each={people()}>
+                                                    {(person) => (
+                                                        <option value={person.id}>
+                                                            {person.displayName}
+                                                        </option>
+                                                    )}
+                                                </For>
+                                            </select>
+                                        </Show>
+                                    </div>
                                     <Show
-                                        when={!threads.loading}
+                                        when={!threads.loading || store.list.length > 0}
                                         fallback={
                                             <div class="acr-rail__status">Loading comments…</div>
                                         }
@@ -532,7 +561,7 @@ export function ReviewView(props: ReviewViewProps) {
                                             when={visibleThreads().length > 0}
                                             fallback={
                                                 <div class="acr-rail__status">
-                                                    {(threads()?.length ?? 0) === 0
+                                                    {store.list.length === 0
                                                         ? 'No comments yet. Select text in the document to comment.'
                                                         : 'No comments match this filter.'}
                                                 </div>
