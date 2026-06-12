@@ -1,4 +1,4 @@
-import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, For, onCleanup, Show } from 'solid-js';
 
 import { fetchCurrentUser } from '../../lib/ado/identities';
 import { getFileContent } from '../../lib/ado/items';
@@ -17,14 +17,25 @@ interface ReviewViewProps {
     context: PrContext;
 }
 
+interface SelectionAnchor {
+    startLine: number;
+    endLine: number;
+    top: number;
+    left: number;
+}
+
 function threadLine(thread: CommentThread): number {
     return thread.threadContext?.rightFileStart?.line ?? Number.MAX_SAFE_INTEGER;
 }
 
-function hasTextSelection(node: Node): boolean {
+function shadowSelection(node: Node): Selection | null {
     const root = node.getRootNode() as unknown as { getSelection?: () => Selection | null };
-    const selection = root.getSelection ? root.getSelection() : window.getSelection();
-    return Boolean(selection && !selection.isCollapsed);
+    return root.getSelection ? root.getSelection() : window.getSelection();
+}
+
+function closestSourceBlock(node: Node | null): HTMLElement | null {
+    const el = node instanceof HTMLElement ? node : (node?.parentElement ?? null);
+    return el ? el.closest<HTMLElement>('[data-source-line]') : null;
 }
 
 export function ReviewView(props: ReviewViewProps) {
@@ -57,9 +68,8 @@ export function ReviewView(props: ReviewViewProps) {
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
     const [activeId, setActiveId] = createSignal<number | null>(null);
-    const [newThread, setNewThread] = createSignal<{ startLine: number; endLine: number } | null>(
-        null,
-    );
+    const [selAnchor, setSelAnchor] = createSignal<SelectionAnchor | null>(null);
+    const [composer, setComposer] = createSignal<SelectionAnchor | null>(null);
 
     // Highlight rendered blocks that carry comments, once doc + threads are ready.
     createEffect(() => {
@@ -134,43 +144,86 @@ export function ReviewView(props: ReviewViewProps) {
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    function startNewThread(block: HTMLElement): void {
-        const startLine = Number(block.dataset['sourceLine']);
-        if (Number.isNaN(startLine)) {
-            return;
+    function readDocSelection(): SelectionAnchor | null {
+        if (!docEl) {
+            return null;
         }
-        const endAttr = block.dataset['sourceEndLine'];
-        const parsedEnd = endAttr ? Number(endAttr) : startLine;
-        setActiveId(null);
-        setNewThread({ startLine, endLine: Number.isNaN(parsedEnd) ? startLine : parsedEnd });
-        requestAnimationFrame(() => {
-            railEl?.querySelector('.acr-new')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
+        const selection = shadowSelection(docEl);
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+            return null;
+        }
+        const range = selection.getRangeAt(0);
+        if (!docEl.contains(range.startContainer) || !docEl.contains(range.endContainer)) {
+            return null;
+        }
+        const startBlock = closestSourceBlock(range.startContainer);
+        if (!startBlock) {
+            return null;
+        }
+        const startLine = Number(startBlock.dataset['sourceLine']);
+        if (Number.isNaN(startLine)) {
+            return null;
+        }
+        const endBlock = closestSourceBlock(range.endContainer) ?? startBlock;
+        const endRaw = endBlock.dataset['sourceEndLine'] ?? endBlock.dataset['sourceLine'];
+        const endLine = Number(endRaw);
+        const rect = range.getBoundingClientRect();
+        return {
+            startLine,
+            endLine: Number.isNaN(endLine) ? startLine : Math.max(startLine, endLine),
+            top: rect.top,
+            left: Math.min(rect.right + 6, window.innerWidth - 44),
+        };
+    }
+
+    function onDocMouseDown(): void {
+        setSelAnchor(null);
+    }
+
+    function onDocMouseUp(): void {
+        window.setTimeout(() => {
+            const info = readDocSelection();
+            if (info) {
+                setSelAnchor(info);
+            } else if (!composer()) {
+                setSelAnchor(null);
+            }
+        }, 0);
     }
 
     function onDocClick(event: MouseEvent): void {
-        const block = (event.target as HTMLElement | null)?.closest<HTMLElement>(
-            '[data-source-line]',
-        );
-        if (!block) {
+        const selection = docEl ? shadowSelection(docEl) : null;
+        if (selection && !selection.isCollapsed) {
             return;
         }
-        const existing = block.dataset['threadId'];
-        if (existing) {
-            const id = Number(existing);
-            if (!Number.isNaN(id)) {
-                focusThread(id, 'card');
-            }
+        const block = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-thread-id]');
+        const id = block ? Number(block.dataset['threadId']) : Number.NaN;
+        if (!Number.isNaN(id)) {
+            focusThread(id, 'card');
+        }
+    }
+
+    function openComposer(): void {
+        const anchor = selAnchor();
+        if (!anchor) {
             return;
         }
-        if (hasTextSelection(block)) {
-            return;
-        }
-        startNewThread(block);
+        setComposer({
+            ...anchor,
+            top: Math.min(anchor.top, window.innerHeight - 320),
+            left: Math.min(anchor.left, window.innerWidth - 380),
+        });
+        setSelAnchor(null);
+        setActiveId(null);
+    }
+
+    function closeComposer(): void {
+        setComposer(null);
+        shadowSelection(docEl ?? document.body)?.removeAllRanges?.();
     }
 
     async function submitNewThread(content: string): Promise<void> {
-        const target = newThread();
+        const target = composer();
         if (!target) {
             return;
         }
@@ -183,9 +236,15 @@ export function ReviewView(props: ReviewViewProps) {
                 target.endLine,
             ),
         });
-        setNewThread(null);
+        closeComposer();
         void refetchThreads();
     }
+
+    const onScroll = (): void => {
+        setSelAnchor(null);
+    };
+    document.addEventListener('scroll', onScroll, true);
+    onCleanup(() => document.removeEventListener('scroll', onScroll, true));
 
     return (
         <div class="ado-companion-review">
@@ -208,6 +267,8 @@ export function ReviewView(props: ReviewViewProps) {
                                     docEl = el;
                                 }}
                                 innerHTML={docHtml()}
+                                on:mousedown={onDocMouseDown}
+                                on:mouseup={onDocMouseUp}
                                 on:click={onDocClick}
                             />
                             <div
@@ -216,23 +277,6 @@ export function ReviewView(props: ReviewViewProps) {
                                     railEl = el;
                                 }}
                             >
-                                <Show when={newThread()}>
-                                    {(target) => (
-                                        <div class="acr-card acr-new">
-                                            <span class="acr-card__status">
-                                                New comment · line {target().startLine}
-                                            </span>
-                                            <CommentComposer
-                                                prBaseUrl={prBaseUrl()}
-                                                organizationUrl={props.context.organizationUrl}
-                                                placeholder="Comment on this section…"
-                                                submitLabel="Comment"
-                                                onSubmit={submitNewThread}
-                                                onCancel={() => setNewThread(null)}
-                                            />
-                                        </div>
-                                    )}
-                                </Show>
                                 <Show
                                     when={threads()}
                                     fallback={
@@ -243,12 +287,10 @@ export function ReviewView(props: ReviewViewProps) {
                                         <Show
                                             when={list().length > 0}
                                             fallback={
-                                                <Show when={!newThread()}>
-                                                    <div class="acr-rail__status">
-                                                        No comments yet. Click a paragraph to
-                                                        comment.
-                                                    </div>
-                                                </Show>
+                                                <div class="acr-rail__status">
+                                                    No comments yet. Select text in the document to
+                                                    comment.
+                                                </div>
                                             }
                                         >
                                             <For each={list()}>
@@ -271,6 +313,44 @@ export function ReviewView(props: ReviewViewProps) {
                         </div>
                     )}
                 </Show>
+            </Show>
+
+            <Show when={selAnchor()}>
+                {(anchor) => (
+                    <button
+                        class="acr-sel-btn"
+                        type="button"
+                        title="Add a comment"
+                        style={{ top: `${anchor().top}px`, left: `${anchor().left}px` }}
+                        on:mousedown={(event) => event.preventDefault()}
+                        on:click={openComposer}
+                    >
+                        <span class="acr-sel-btn__glyph">＋</span>
+                    </button>
+                )}
+            </Show>
+
+            <Show when={composer()}>
+                {(target) => (
+                    <div
+                        class="acr-popover"
+                        style={{ top: `${target().top}px`, left: `${target().left}px` }}
+                    >
+                        <div class="acr-popover__title">
+                            New comment · {target().startLine === target().endLine
+                                ? `line ${target().startLine}`
+                                : `lines ${target().startLine}–${target().endLine}`}
+                        </div>
+                        <CommentComposer
+                            prBaseUrl={prBaseUrl()}
+                            organizationUrl={props.context.organizationUrl}
+                            placeholder="Comment on the selected text…"
+                            submitLabel="Comment"
+                            onSubmit={submitNewThread}
+                            onCancel={closeComposer}
+                        />
+                    </div>
+                )}
             </Show>
         </div>
     );

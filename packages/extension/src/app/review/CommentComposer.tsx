@@ -1,14 +1,16 @@
-import { createSignal, For, onCleanup, Show } from 'solid-js';
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 
 import { attachmentMarkdown, uploadAttachment } from '../../lib/ado/attachments';
 import { searchIdentities } from '../../lib/ado/identities';
 import type { MentionCandidate } from '../../lib/ado/identities';
 import { attachmentFileName, insertText, pickImageFiles } from '../../lib/review/editor';
+import { renderMarkdown } from '../../lib/markdown/render';
 import {
     applyMentionSelection,
     cacheMentionName,
     encodeMentions,
     findMentionQuery,
+    renderMentions,
 } from '../../lib/review/mentions';
 import type { PendingMention } from '../../lib/review/mentions';
 
@@ -35,7 +37,15 @@ export function CommentComposer(props: CommentComposerProps) {
     let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
     let textarea: HTMLTextAreaElement | undefined;
-    let fileInput: HTMLInputElement | undefined;
+
+    onMount(() => {
+        // Focus immediately so the first keystroke lands here (and never in ADO's
+        // global search via its document-level shortcut handlers).
+        const focus = (): void => textarea?.focus();
+        focus();
+        requestAnimationFrame(focus);
+        window.setTimeout(focus, 40);
+    });
 
     onCleanup(() => {
         if (searchTimer) {
@@ -149,13 +159,6 @@ export function CommentComposer(props: CommentComposerProps) {
         }
     }
 
-    function onFilePick(event: Event): void {
-        const input = event.currentTarget as HTMLInputElement;
-        const files = input.files ? Array.from(input.files) : [];
-        void uploadImages(files);
-        input.value = '';
-    }
-
     async function submit(): Promise<void> {
         const raw = value().trim();
         if (raw.length === 0 || busy()) {
@@ -250,29 +253,17 @@ export function CommentComposer(props: CommentComposerProps) {
                     </For>
                 </ul>
             </Show>
-            <input
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                ref={(el) => {
-                    fileInput = el;
-                }}
-                on:change={onFilePick}
-            />
+            <Show when={value().trim().length > 0}>
+                <div class="acr-composer__preview-label">Preview</div>
+                <div
+                    class="acr-composer__preview markdown-content"
+                    innerHTML={renderMarkdown(renderMentions(value()))}
+                />
+            </Show>
             <div class="acr-composer__actions">
-                <button
-                    class="acr-btn"
-                    type="button"
-                    title="Attach an image"
-                    on:click={() => fileInput?.click()}
-                    disabled={uploading()}
-                >
-                    Image
-                </button>
-                <Show when={uploading()}>
-                    <span class="acr-composer__hint">Uploading…</span>
-                </Show>
+                <span class="acr-composer__hint">
+                    {uploading() ? 'Uploading image…' : 'Paste an image to attach it.'}
+                </span>
                 <Show when={error()}>
                     <span class="acr-composer__error">{error()}</span>
                 </Show>

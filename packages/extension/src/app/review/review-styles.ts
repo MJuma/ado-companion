@@ -107,6 +107,18 @@ export const reviewStyles = `
 .acr-composer__spacer { flex: 1 1 auto; }
 .acr-composer__hint { font-size: 12px; color: var(--text-secondary-color, #6b6b6b); }
 .acr-composer__error { font-size: 12px; color: var(--status-error-text, #c4314b); }
+.acr-composer__preview-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary-color, #6b6b6b); margin-top: 4px; }
+.acr-composer__preview {
+    font-size: 13px;
+    border: 1px solid rgba(var(--palette-neutral-20, 224, 224, 224), .6);
+    border-radius: 4px;
+    padding: 8px 10px;
+    background: rgba(var(--palette-neutral-4, 250, 250, 250), .4);
+    max-height: 240px;
+    overflow: auto;
+}
+.acr-composer__preview > :first-child { margin-top: 0; }
+.acr-composer__preview > :last-child { margin-bottom: 0; }
 
 .acr-btn {
     font-family: inherit;
@@ -169,4 +181,39 @@ export const reviewStyles = `
 .acr-mentions__item--active, .acr-mentions__item:hover { background: rgba(var(--palette-neutral-8, 0, 0, 0), .4); }
 .acr-mentions__name { font-size: 13px; }
 .acr-mentions__mail { font-size: 11px; color: var(--text-secondary-color, #6b6b6b); }
+
+/* Floating "add a comment" button shown on text selection */
+.acr-sel-btn {
+    position: fixed;
+    z-index: 10;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--communication-foreground, #0067b8);
+    background: var(--communication-background, #0067b8);
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.acr-sel-btn:hover { filter: brightness(1.08); }
+.acr-sel-btn__glyph { font-size: 18px; font-weight: 600; }
+
+/* Floating composer popover anchored near the selection */
+.acr-popover {
+    position: fixed;
+    z-index: 10;
+    width: 360px;
+    max-width: calc(100vw - 24px);
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(var(--palette-neutral-30, 200, 200, 200), 1);
+    background: var(--callout-background-color, var(--background-color, #ffffff));
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .28);
+}
+.acr-popover__title { font-size: 12px; font-weight: 600; color: var(--text-secondary-color, #6b6b6b); margin-bottom: 4px; }
 `;
