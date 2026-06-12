@@ -109,6 +109,8 @@ export function ReviewView(props: ReviewViewProps) {
 
     const [statusFilter, setStatusFilter] = createSignal<StatusFilter>('all');
     const [personFilter, setPersonFilter] = createSignal('all');
+    // Comment-pane width. Ephemeral by design — resets to the default on reload.
+    const [railWidth, setRailWidth] = createSignal(340);
     const [now, setNow] = createSignal(Date.now());
     const nowTimer = window.setInterval(() => setNow(Date.now()), 60_000);
     onCleanup(() => window.clearInterval(nowTimer));
@@ -177,6 +179,8 @@ export function ReviewView(props: ReviewViewProps) {
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
     let toolbarEl: HTMLDivElement | undefined;
+    let layoutEl: HTMLDivElement | undefined;
+    let reviewEl: HTMLDivElement | undefined;
     const slotEls = new Map<number, HTMLElement>();
     const [activeId, setActiveId] = createSignal<number | null>(null);
     const [selAnchor, setSelAnchor] = createSignal<SelectionAnchor | null>(null);
@@ -188,6 +192,33 @@ export function ReviewView(props: ReviewViewProps) {
         requestAnimationFrame(reposition);
     });
     onCleanup(() => resizeObserver.disconnect());
+
+    // Drag the divider to resize the comment pane. Widening the rail narrows the
+    // doc (which reflows), so the ResizeObserver re-aligns the cards.
+    function startResize(event: MouseEvent): void {
+        event.preventDefault();
+        const startX = event.clientX;
+        const startWidth = railWidth();
+        const maxWidth = layoutEl ? layoutEl.clientWidth - 360 : 900;
+        reviewEl?.classList.add('acr-resizing');
+        const onMove = (moveEvent: MouseEvent): void => {
+            const next = startWidth - (moveEvent.clientX - startX);
+            setRailWidth(Math.max(260, Math.min(next, Math.max(260, maxWidth))));
+        };
+        const onUp = (): void => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            reviewEl?.classList.remove('acr-resizing');
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
+
+    // Re-align cards whenever the pane is resized.
+    createEffect(() => {
+        railWidth();
+        requestAnimationFrame(reposition);
+    });
 
     // Word-style alignment: place each comment card at the vertical offset of its
     // anchored block, stacking down to avoid overlaps.
@@ -459,7 +490,12 @@ export function ReviewView(props: ReviewViewProps) {
     });
 
     return (
-        <div class="ado-companion-review">
+        <div
+            class="ado-companion-review"
+            ref={(el) => {
+                reviewEl = el;
+            }}
+        >
             <Show when={html.loading}>
                 <div class="ado-companion-review__status">Loading…</div>
             </Show>
@@ -473,7 +509,12 @@ export function ReviewView(props: ReviewViewProps) {
                 >
                     {(docHtml) => (
                         <>
-                            <div class="acr-layout">
+                            <div
+                                class="acr-layout"
+                                ref={(el) => {
+                                    layoutEl = el;
+                                }}
+                            >
                                 <div
                                     class="acr-doc markdown-content"
                                     role="document"
@@ -487,9 +528,18 @@ export function ReviewView(props: ReviewViewProps) {
                                     on:click={onDocClick}
                                 />
                                 <div
+                                    class="acr-divider"
+                                    role="separator"
+                                    aria-orientation="vertical"
+                                    aria-label="Resize comments pane"
+                                    title="Drag to resize"
+                                    on:mousedown={startResize}
+                                />
+                                <div
                                     class="acr-rail"
                                     role="complementary"
                                     aria-label="Comments"
+                                    style={{ flex: `0 0 ${railWidth()}px` }}
                                     ref={(el) => {
                                         railEl = el;
                                     }}
