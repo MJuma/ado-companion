@@ -19,7 +19,8 @@ export interface NewThreadInput {
     status?: ThreadStatus;
     mentions?: CommentMention[];
     pullRequestThreadContext?: PullRequestThreadContext;
-    properties?: Record<string, { type: string; value: string }>;
+    /** Custom string properties; serialized to ADO's `$type`/`$value` form. */
+    properties?: Record<string, string>;
 }
 
 export async function listThreads(prBaseUrl: string): Promise<CommentThread[]> {
@@ -74,7 +75,12 @@ export async function createThread(
         body.pullRequestThreadContext = input.pullRequestThreadContext;
     }
     if (input.properties) {
-        body.properties = input.properties;
+        body.properties = Object.fromEntries(
+            Object.entries(input.properties).map(([key, value]) => [
+                key,
+                { '$type': 'System.String', '$value': value },
+            ]),
+        );
     }
 
     return adoSendJson<CommentThread>('POST', `${prBaseUrl}/threads?${API}`, body);

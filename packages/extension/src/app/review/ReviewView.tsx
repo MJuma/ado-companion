@@ -17,6 +17,16 @@ import { ThreadStatus, isFileThread } from '../../lib/ado/pr-types';
 import type { CommentThread, IdentityRef } from '../../lib/ado/pr-types';
 import { buildLineThreadContext, createThread, listThreads } from '../../lib/ado/threads';
 import { anchorThreads } from '../../lib/markdown/anchor';
+import {
+    findQuoteOffset,
+    parseHighlightProp,
+    rawLineQuote,
+    serializeHighlightProp,
+    textOffsetWithin,
+    unwrapHighlights,
+    wrapTextRange,
+} from '../../lib/markdown/highlight';
+import type { HighlightAnchor } from '../../lib/markdown/highlight';
 import { resolveImageSrc } from '../../lib/markdown/images';
 import { renderMarkdown } from '../../lib/markdown/render';
 import { cacheMentionName } from '../../lib/review/mentions';
@@ -42,7 +52,12 @@ interface SelectionAnchor {
     endLine: number;
     top: number;
     left: number;
+    quote?: string;
+    quoteOffset?: number;
 }
+
+const HIGHLIGHT_PROP = 'ADOCompanion.Highlight';
+const HIGHLIGHT_CLASS = 'acr-hl';
 
 function threadLine(thread: CommentThread): number {
     return thread.threadContext?.rightFileStart?.line ?? Number.MAX_SAFE_INTEGER;
@@ -52,6 +67,28 @@ function threadAuthors(thread: CommentThread): IdentityRef[] {
     return thread.comments
         .filter((comment) => !comment.isDeleted)
         .map((comment) => comment.author);
+}
+
+/** Resolve the text span to highlight for a thread: our stored quote, else the
+ * native single-line source range. */
+function highlightFor(thread: CommentThread, rawLines: string[]): HighlightAnchor | null {
+    const stored = parseHighlightProp(
+        (thread.properties?.[HIGHLIGHT_PROP] as { '$value'?: unknown } | undefined)?.['$value'],
+    );
+    if (stored) {
+        return stored;
+    }
+    const context = thread.threadContext;
+    if (context?.rightFileStart && context.rightFileEnd) {
+        return rawLineQuote(
+            rawLines,
+            context.rightFileStart.line,
+            context.rightFileStart.offset,
+            context.rightFileEnd.line,
+            context.rightFileEnd.offset,
+        );
+    }
+    return null;
 }
 
 function shadowSelection(node: Node): Selection | null {
@@ -65,13 +102,16 @@ function closestSourceBlock(node: Node | null): HTMLElement | null {
 }
 
 export function ReviewView(props: ReviewViewProps) {
+    const [rawText, setRawText] = createSignal<string | null>(null);
     const [html] = createResource(
         () => props.context,
         async (context): Promise<string | null> => {
             const markdown = await getFileContent(context);
+            setRawText(markdown);
             return markdown === null ? null : renderMarkdown(markdown);
         },
     );
+    const rawLines = createMemo<string[]>(() => (rawText() ?? '').split('\n'));
 
     const [threads, { refetch: refetchThreads }] = createResource(
         () => props.context,
@@ -270,7 +310,9 @@ export function ReviewView(props: ReviewViewProps) {
             if (!root) {
                 return;
             }
-            // Clear previous anchors so a filter change doesn't leave stale ones.
+            // Remove previous highlight marks (restoring clean text) and block
+            // anchors so a filter/refetch change doesn't leave stale ones.
+            unwrapHighlights(root, HIGHLIGHT_CLASS);
             for (const stale of root.querySelectorAll<HTMLElement>('[data-thread-id]')) {
                 stale.classList.remove('acr-anchored', 'acr-anchored--active');
                 delete stale.dataset['threadId'];
@@ -295,6 +337,8 @@ export function ReviewView(props: ReviewViewProps) {
                 })),
                 blockLines,
             );
+            const byId = new Map(list.map((thread) => [thread.id, thread]));
+            const lines = rawLines();
             for (const { id, anchorLine } of anchored) {
                 if (anchorLine === null) {
                     continue;
@@ -306,6 +350,19 @@ export function ReviewView(props: ReviewViewProps) {
                 el.classList.add('acr-anchored');
                 if (!el.dataset['threadId']) {
                     el.dataset['threadId'] = String(id);
+                }
+                const thread = byId.get(id);
+                const anchor = thread ? highlightFor(thread, lines) : null;
+                if (anchor) {
+                    const idx = findQuoteOffset(el.textContent ?? '', anchor.quote, anchor.offset);
+                    if (idx >= 0) {
+                        wrapTextRange(el, idx, idx + anchor.quote.length, () => {
+                            const mark = document.createElement('mark');
+                            mark.className = HIGHLIGHT_CLASS;
+                            mark.dataset['threadId'] = String(id);
+                            return mark;
+                        });
+                    }
                 }
             }
             setLayoutTick((value) => value + 1);
@@ -323,19 +380,22 @@ export function ReviewView(props: ReviewViewProps) {
         requestAnimationFrame(reposition);
     });
 
-    // Reflect the active thread on its anchored block.
+    // Reflect the active thread on its anchored block + highlighted text.
     createEffect(() => {
         const id = activeId();
         if (!docEl) {
             return;
         }
-        for (const el of docEl.querySelectorAll('.acr-anchored--active')) {
-            el.classList.remove('acr-anchored--active');
+        for (const el of docEl.querySelectorAll('.acr-anchored--active, .acr-hl--active')) {
+            el.classList.remove('acr-anchored--active', 'acr-hl--active');
         }
         if (id === null) {
             return;
         }
         docEl.querySelector(`[data-thread-id="${id}"]`)?.classList.add('acr-anchored--active');
+        for (const mark of docEl.querySelectorAll(`mark.acr-hl[data-thread-id="${id}"]`)) {
+            mark.classList.add('acr-hl--active');
+        }
     });
 
     function focusThread(threadId: number, scrollTo: 'block' | 'card'): void {
@@ -424,11 +484,14 @@ export function ReviewView(props: ReviewViewProps) {
         const endLine = Number(endRaw);
         const rect = range.getBoundingClientRect();
         const aboveTop = rect.top - 32;
+        const quote = range.toString().trim();
         return {
             startLine,
             endLine: Number.isNaN(endLine) ? startLine : Math.max(startLine, endLine),
             top: aboveTop >= 6 ? aboveTop : rect.bottom + 6,
             left: Math.min(Math.max(rect.left, 6), window.innerWidth - 40),
+            quote: quote.length > 0 ? quote : undefined,
+            quoteOffset: textOffsetWithin(startBlock, range.startContainer, range.startOffset),
         };
     }
 
@@ -483,6 +546,9 @@ export function ReviewView(props: ReviewViewProps) {
         if (!target) {
             return;
         }
+        const properties = target.quote
+            ? { [HIGHLIGHT_PROP]: serializeHighlightProp(target.quote, target.quoteOffset ?? 0) }
+            : undefined;
         await createThread(prBaseUrl(), {
             content,
             status: ThreadStatus.Active,
@@ -491,6 +557,7 @@ export function ReviewView(props: ReviewViewProps) {
                 target.startLine,
                 target.endLine,
             ),
+            properties,
         });
         closeComposer();
         void refetchThreads();

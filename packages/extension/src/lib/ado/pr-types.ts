@@ -89,7 +89,7 @@ export interface CreateThreadRequest {
     status: ThreadStatus;
     threadContext?: ThreadContext;
     pullRequestThreadContext?: PullRequestThreadContext;
-    properties?: Record<string, { type: string; value: string }>;
+    properties?: Record<string, { '$type': string; '$value': string }>;
 }
 
 export interface UpdateThreadRequest {

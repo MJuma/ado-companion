@@ -77,6 +77,14 @@ export const reviewStyles = `
     background: rgba(var(--palette-neutral-8, 0, 0, 0), .35);
     border-radius: 2px;
 }
+/* Highlighted text span the comment was made on (in addition to the border). */
+mark.acr-hl {
+    background-color: rgba(255, 196, 0, .28);
+    color: inherit;
+    border-radius: 2px;
+}
+.acr-anchored:hover mark.acr-hl { background-color: rgba(255, 196, 0, .45); }
+mark.acr-hl--active { background-color: rgba(255, 196, 0, .6); }
 
 /* Comment cards */
 .acr-card {

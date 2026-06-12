@@ -159,7 +159,7 @@ describe('createThread options', () => {
         await createThread(PR, {
             content: 'note',
             status: ThreadStatus.Closed,
-            properties: { adoCompanionAnchor: { type: 'System.String', value: 'phrase' } },
+            properties: { adoCompanionAnchor: 'phrase' },
         });
 
         const body = fetchJsonBody(fetchMock) as ParsedThreadBody & {
@@ -167,7 +167,7 @@ describe('createThread options', () => {
         };
         expect(body.status).toBe('closed');
         expect(body.properties).toEqual({
-            adoCompanionAnchor: { type: 'System.String', value: 'phrase' },
+            adoCompanionAnchor: { '$type': 'System.String', '$value': 'phrase' },
         });
     });
 });
