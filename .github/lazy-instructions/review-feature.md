@@ -31,7 +31,14 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
     encode to `@<GUID>` on submit, GUID→name cache for rendering). `CommentItem`
     renders `@<GUID>` as `@Name` before markdown.
   - Created threads/replies/mentions are **native ADO comments** (interoperable).
-- ⏳ **Phase 6** — toolbar popup + options page (allowlist).
+- ✅ **Phase 6** — settings + allowlist: `src/lib/settings` (`ReviewSettings
+  { enabled, allowlist }`, `isUrlAllowed`, WXT-storage load/save/watch); an
+  **options page** (enable toggle + allowlist editor; registers `options_ui`) and
+  a **popup** (status + quick toggle + Open settings). `content.tsx` gates every
+  enhancer on settings — disabling or an allowlist miss unmounts the UI live;
+  default (enabled, empty allowlist) runs everywhere. Logic unit-tested; the pages
+  follow the repo's build + manual verification (playwright-cli can't open
+  `chrome-extension://` pages).
 
 ## Locked decisions
 
