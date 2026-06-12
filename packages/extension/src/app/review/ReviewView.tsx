@@ -1,18 +1,41 @@
-import { createEffect, createResource, createSignal, For, onCleanup, Show } from 'solid-js';
+import {
+    createEffect,
+    createMemo,
+    createResource,
+    createSignal,
+    For,
+    onCleanup,
+    Show,
+} from 'solid-js';
 
 import { fetchCurrentUser } from '../../lib/ado/identities';
-import { getFileContent } from '../../lib/ado/items';
-import { getPrApiBaseUrl } from '../../lib/ado/pr';
+import { getFileContent, getPrSourceCommit } from '../../lib/ado/items';
+import { getPrApiBaseUrl, getRepoApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
-import { ThreadStatus, isFileThread } from '../../lib/ado/pr-types';
+import { ThreadStatus, isFileThread, isResolvedStatus } from '../../lib/ado/pr-types';
 import type { CommentThread } from '../../lib/ado/pr-types';
-import { buildLineThreadContext, createThread, listThreads } from '../../lib/ado/threads';
+import {
+    buildLineThreadContext,
+    createThread,
+    listThreads,
+    setThreadStatus,
+} from '../../lib/ado/threads';
 import { anchorThreads } from '../../lib/markdown/anchor';
+import { resolveImageSrc } from '../../lib/markdown/images';
 import { renderMarkdown } from '../../lib/markdown/render';
+import { cacheMentionName } from '../../lib/review/mentions';
 
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
 import { CommentIcon } from './Icons';
+
+type StatusFilter = 'all' | 'active' | 'resolved';
+
+const FILTERS: { value: StatusFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'active', label: 'Active' },
+    { value: 'resolved', label: 'Resolved' },
+];
 
 interface ReviewViewProps {
     context: PrContext;
@@ -66,6 +89,88 @@ export function ReviewView(props: ReviewViewProps) {
         (context) => fetchCurrentUser(context.organizationUrl).catch(() => null),
     );
 
+    const [commitId] = createResource(
+        () => props.context,
+        (context) => getPrSourceCommit(getPrApiBaseUrl(context)).catch(() => null),
+    );
+
+    const [statusFilter, setStatusFilter] = createSignal<StatusFilter>('all');
+    const [resolvingAll, setResolvingAll] = createSignal(false);
+    const [now, setNow] = createSignal(Date.now());
+    const nowTimer = window.setInterval(() => setNow(Date.now()), 60_000);
+    onCleanup(() => window.clearInterval(nowTimer));
+
+    const visibleThreads = createMemo<CommentThread[]>(() => {
+        const all = threads() ?? [];
+        const filter = statusFilter();
+        if (filter === 'all') {
+            return all;
+        }
+        return all.filter((thread) =>
+            filter === 'resolved' ? isResolvedStatus(thread.status) : !isResolvedStatus(thread.status),
+        );
+    });
+
+    const activeCount = createMemo(
+        () => (threads() ?? []).filter((thread) => !isResolvedStatus(thread.status)).length,
+    );
+
+    // Resolve names for @<GUID> mentions from everyone who has commented.
+    createEffect(() => {
+        for (const thread of threads() ?? []) {
+            for (const comment of thread.comments) {
+                if (comment.author.id) {
+                    cacheMentionName(comment.author.id, comment.author.displayName);
+                }
+            }
+        }
+    });
+
+    // Rewrite relative/LFS doc images to ADO items URLs once content + commit load.
+    createEffect(() => {
+        const rendered = !html.loading && html();
+        const commit = commitId();
+        if (!docEl || !rendered || !commit) {
+            return;
+        }
+        requestAnimationFrame(() => {
+            const root = docEl;
+            if (!root) {
+                return;
+            }
+            for (const img of root.querySelectorAll<HTMLImageElement>('img[src]')) {
+                const original = img.getAttribute('src') ?? '';
+                const resolved = resolveImageSrc(original, {
+                    repoBaseUrl: getRepoApiBaseUrl(props.context),
+                    filePath: props.context.filePath,
+                    commitId: commit,
+                });
+                if (resolved) {
+                    img.setAttribute('src', resolved);
+                }
+            }
+        });
+    });
+
+    async function resolveAll(): Promise<void> {
+        if (resolvingAll()) {
+            return;
+        }
+        const active = (threads() ?? []).filter((thread) => !isResolvedStatus(thread.status));
+        if (active.length === 0) {
+            return;
+        }
+        setResolvingAll(true);
+        try {
+            for (const thread of active) {
+                await setThreadStatus(prBaseUrl(), thread.id, ThreadStatus.Fixed);
+            }
+            void refetchThreads();
+        } finally {
+            setResolvingAll(false);
+        }
+    }
+
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
     const slotEls = new Map<number, HTMLElement>();
@@ -83,8 +188,8 @@ export function ReviewView(props: ReviewViewProps) {
     // Word-style alignment: place each comment card at the vertical offset of its
     // anchored block, stacking down to avoid overlaps.
     function reposition(): void {
-        const list = threads();
-        if (!docEl || !railEl || !list) {
+        const list = visibleThreads();
+        if (!docEl || !railEl) {
             return;
         }
         const railTop = railEl.getBoundingClientRect().top;
@@ -118,15 +223,20 @@ export function ReviewView(props: ReviewViewProps) {
 
     // Highlight rendered blocks that carry comments, once doc + threads are ready.
     createEffect(() => {
-        const list = threads();
+        const list = visibleThreads();
         const rendered = !html.loading && html();
-        if (!docEl || !list || !rendered) {
+        if (!docEl || !rendered) {
             return;
         }
         requestAnimationFrame(() => {
             const root = docEl;
             if (!root) {
                 return;
+            }
+            // Clear previous anchors so a filter change doesn't leave stale ones.
+            for (const stale of root.querySelectorAll<HTMLElement>('[data-thread-id]')) {
+                stale.classList.remove('acr-anchored', 'acr-anchored--active');
+                delete stale.dataset['threadId'];
             }
             const blocks = Array.from(root.querySelectorAll<HTMLElement>('[data-source-line]'));
             const lineToEl = new Map<number, HTMLElement>();
@@ -167,7 +277,7 @@ export function ReviewView(props: ReviewViewProps) {
 
     // Re-align the comment cards whenever the doc, threads, or layout changes.
     createEffect(() => {
-        threads();
+        visibleThreads();
         layoutTick();
         const rendered = !html.loading && html();
         if (!rendered) {
@@ -356,41 +466,79 @@ export function ReviewView(props: ReviewViewProps) {
                     fallback={<div class="ado-companion-review__status">No content.</div>}
                 >
                     {(docHtml) => (
-                        <div class="acr-layout">
-                            <div
-                                class="acr-doc markdown-content"
-                                ref={(el) => {
-                                    docEl = el;
-                                    resizeObserver.observe(el);
-                                }}
-                                innerHTML={docHtml()}
-                                on:mousedown={onDocMouseDown}
-                                on:mouseup={onDocMouseUp}
-                                on:click={onDocClick}
-                            />
-                            <div
-                                class="acr-rail"
-                                ref={(el) => {
-                                    railEl = el;
-                                }}
-                            >
-                                <Show
-                                    when={threads()}
-                                    fallback={
-                                        <div class="acr-rail__status">Loading comments…</div>
-                                    }
+                        <>
+                            <div class="acr-toolbar" role="toolbar" aria-label="Review comments">
+                                <span class="acr-toolbar__count">
+                                    {(threads()?.length ?? 0)} thread
+                                    {(threads()?.length ?? 0) === 1 ? '' : 's'}
+                                </span>
+                                <span class="acr-toolbar__spacer" />
+                                <div class="acr-segmented" role="group" aria-label="Filter comments">
+                                    <For each={FILTERS}>
+                                        {(option) => (
+                                            <button
+                                                class="acr-seg"
+                                                classList={{
+                                                    'acr-seg--on': statusFilter() === option.value,
+                                                }}
+                                                type="button"
+                                                aria-pressed={statusFilter() === option.value}
+                                                on:click={() => setStatusFilter(option.value)}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        )}
+                                    </For>
+                                </div>
+                                <Show when={activeCount() > 0}>
+                                    <button
+                                        class="acr-btn"
+                                        type="button"
+                                        disabled={resolvingAll()}
+                                        on:click={() => void resolveAll()}
+                                    >
+                                        {resolvingAll() ? 'Resolving…' : 'Resolve all'}
+                                    </button>
+                                </Show>
+                            </div>
+                            <div class="acr-layout">
+                                <div
+                                    class="acr-doc markdown-content"
+                                    role="document"
+                                    ref={(el) => {
+                                        docEl = el;
+                                        resizeObserver.observe(el);
+                                    }}
+                                    innerHTML={docHtml()}
+                                    on:mousedown={onDocMouseDown}
+                                    on:mouseup={onDocMouseUp}
+                                    on:click={onDocClick}
+                                />
+                                <div
+                                    class="acr-rail"
+                                    role="complementary"
+                                    aria-label="Comments"
+                                    ref={(el) => {
+                                        railEl = el;
+                                    }}
                                 >
-                                    {(list) => (
+                                    <Show
+                                        when={!threads.loading}
+                                        fallback={
+                                            <div class="acr-rail__status">Loading comments…</div>
+                                        }
+                                    >
                                         <Show
-                                            when={list().length > 0}
+                                            when={visibleThreads().length > 0}
                                             fallback={
                                                 <div class="acr-rail__status">
-                                                    No comments yet. Select text in the document to
-                                                    comment.
+                                                    {(threads()?.length ?? 0) === 0
+                                                        ? 'No comments yet. Select text in the document to comment.'
+                                                        : 'No comments match this filter.'}
                                                 </div>
                                             }
                                         >
-                                            <For each={list()}>
+                                            <For each={visibleThreads()}>
                                                 {(thread) => {
                                                     onCleanup(() => {
                                                         const el = slotEls.get(thread.id);
@@ -421,6 +569,7 @@ export function ReviewView(props: ReviewViewProps) {
                                                                 currentUserId={
                                                                     currentUser()?.id ?? null
                                                                 }
+                                                                now={now()}
                                                                 onActivate={(id) =>
                                                                     focusThread(id, 'block')
                                                                 }
@@ -433,10 +582,10 @@ export function ReviewView(props: ReviewViewProps) {
                                                 }}
                                             </For>
                                         </Show>
-                                    )}
-                                </Show>
+                                    </Show>
+                                </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </Show>
             </Show>

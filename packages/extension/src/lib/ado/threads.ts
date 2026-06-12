@@ -131,3 +131,25 @@ export async function deleteComment(
         `${prBaseUrl}/threads/${threadId}/comments/${commentId}?${API}`,
     );
 }
+
+export async function likeComment(
+    prBaseUrl: string,
+    threadId: number,
+    commentId: number,
+): Promise<void> {
+    return adoSendVoid(
+        'POST',
+        `${prBaseUrl}/threads/${threadId}/comments/${commentId}/likes?${API}`,
+    );
+}
+
+export async function unlikeComment(
+    prBaseUrl: string,
+    threadId: number,
+    commentId: number,
+): Promise<void> {
+    return adoSendVoid(
+        'DELETE',
+        `${prBaseUrl}/threads/${threadId}/comments/${commentId}/likes?${API}`,
+    );
+}

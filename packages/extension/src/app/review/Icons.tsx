@@ -20,6 +20,9 @@ const TRASH =
     'M6.5 2h3a1 1 0 0 1 1 1v.5H13a.5.5 0 0 1 0 1h-.6l-.5 8.1a1.5 1.5 0 0 1-1.5 1.4H5.6a1.5 1.5 0 0 1-1.5-1.4L3.6 4.5H3a.5.5 0 0 1 0-1h2.5V3a1 1 0 0 1 1-1zm0 1.5h3V3h-3v.5zM5.1 4.5l.5 8a.5.5 0 0 0 .5.5h4.8a.5.5 0 0 0 .5-.5l.5-8H5.1z';
 const LINK =
     'M6.4 9.6a.75.75 0 0 0 1.06 0l3-3a.75.75 0 0 0-1.06-1.06l-3 3a.75.75 0 0 0 0 1.06zM5 11a1.5 1.5 0 0 1-2.12-2.12l1.6-1.6a.75.75 0 0 0-1.06-1.06l-1.6 1.6a3 3 0 0 0 4.24 4.24l1.6-1.6a.75.75 0 1 0-1.06-1.06L5 11zm6-6a1.5 1.5 0 0 1 2.12 2.12l-1.6 1.6a.75.75 0 1 0 1.06 1.06l1.6-1.6a3 3 0 0 0-4.24-4.24l-1.6 1.6A.75.75 0 0 0 9.4 5.6L11 4z';
+const LIKE =
+    'M6.3 14H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h2.3v7zm1.2-7.6 2-3.6a.8.8 0 0 1 1.5.4V6h2.4a1.2 1.2 0 0 1 1.18 1.42l-.86 4.6A1.5 1.5 0 0 1 12.24 13.2H7.5V6.4z';
+const CHEVRON = 'M4 6h8l-4 5z';
 
 export function CommentIcon(props: IconProps): JSX.Element {
     return svg(COMMENT, props.size ?? 16);
@@ -35,4 +38,12 @@ export function DeleteIcon(props: IconProps): JSX.Element {
 
 export function LinkIcon(props: IconProps): JSX.Element {
     return svg(LINK, props.size ?? 16);
+}
+
+export function LikeIcon(props: IconProps): JSX.Element {
+    return svg(LIKE, props.size ?? 16);
+}
+
+export function ChevronIcon(props: IconProps): JSX.Element {
+    return svg(CHEVRON, props.size ?? 16);
 }

@@ -9,8 +9,10 @@ import {
     buildLineThreadContext,
     createThread,
     deleteComment,
+    likeComment,
     listThreads,
     setThreadStatus,
+    unlikeComment,
     updateComment,
 } from './threads';
 
@@ -204,5 +206,21 @@ describe('buildLineThreadContext', () => {
     it('never emits an end offset below 1', () => {
         const ctx = buildLineThreadContext('/a.md', 3, 3, 0);
         expect(ctx.rightFileEnd?.offset).toBe(1);
+    });
+});
+
+describe('likeComment / unlikeComment', () => {
+    it('POSTs to the comment likes endpoint', async () => {
+        fetchMock.mockResolvedValue(fakeResponse({ jsonValue: {} }));
+        await likeComment(PR, 10, 2);
+        expect(fetchInit(fetchMock).method).toBe('POST');
+        expect(fetchUrl(fetchMock)).toBe(`${PR}/threads/10/comments/2/likes?api-version=7.1`);
+    });
+
+    it('DELETEs the comment likes endpoint to unlike', async () => {
+        fetchMock.mockResolvedValue(fakeResponse({ jsonValue: {} }));
+        await unlikeComment(PR, 10, 2);
+        expect(fetchInit(fetchMock).method).toBe('DELETE');
+        expect(fetchUrl(fetchMock)).toBe(`${PR}/threads/10/comments/2/likes?api-version=7.1`);
     });
 });
