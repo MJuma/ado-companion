@@ -18,14 +18,19 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
   (status, avatar, markdown bodies). `src/lib/markdown/anchor.ts` maps thread source
   line → rendered block for block highlight + bidirectional click-sync. **Verified
   live** on PR 980523 (31 threads → 26 anchored blocks; comment-body images render).
-- ⏳ **Phase 5** — write. Sub-phase **5a done + verified live** (scratch PR 1002836):
-  `CommentComposer` (textarea, Ctrl/Cmd+Enter, image paste/drop/picker →
-  `uploadAttachment` → markdown at caret), reply + thread-status controls in
-  `CommentCard`, and click-a-paragraph-to-create-thread in `ReviewView` (anchored
-  via `buildLineThreadContext`); the rail refetches after every mutation. Created
-  threads are **native ADO comments** (resolving one flipped ADO's own "All
-  comments resolved"). Pure logic in `src/lib/review/editor.ts`. Remaining: **5b**
-  edit/delete own comments, **5c** @mention autocomplete.
+- ✅ **Phase 5** — write (5a/5b/5c all done + verified live on scratch PR 1002836):
+  - **5a**: `CommentComposer` (textarea, Ctrl/Cmd+Enter, image paste/drop/picker →
+    `uploadAttachment` → markdown at caret), reply + thread-status controls in
+    `CommentCard`, click-a-paragraph-to-create-thread in `ReviewView` (anchored via
+    `buildLineThreadContext`); the rail refetches after every mutation.
+  - **5b**: `CommentItem` shows Edit (pre-filled composer → `updateComment`) +
+    Delete (inline confirm → `deleteComment`) on your own comments; ReviewView
+    resolves the current user (`fetchCurrentUser`, `.catch`-guarded) for ownership.
+  - **5c**: @mention autocomplete — `searchIdentities` (same-origin IdentityPicker),
+    `src/lib/review/mentions.ts` (caret query detect, readable `@Name` token,
+    encode to `@<GUID>` on submit, GUID→name cache for rendering). `CommentItem`
+    renders `@<GUID>` as `@Name` before markdown.
+  - Created threads/replies/mentions are **native ADO comments** (interoperable).
 - ⏳ **Phase 6** — toolbar popup + options page (allowlist).
 
 ## Locked decisions
