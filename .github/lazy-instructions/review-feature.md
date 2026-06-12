@@ -18,11 +18,14 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
   (status, avatar, markdown bodies). `src/lib/markdown/anchor.ts` maps thread source
   line → rendered block for block highlight + bidirectional click-sync. **Verified
   live** on PR 980523 (31 threads → 26 anchored blocks; comment-body images render).
-- ⏳ **Phase 5** — write: reply/create/edit + thread-status controls + @mentions +
-  clipboard/drag image paste-upload. The ADO write **data layer is already built +
-  tested** (`threads.ts`: `createThread`/`addReply`/`updateComment`/`setThreadStatus`/
-  `deleteComment`; `attachments.ts`: `uploadAttachment`/`attachmentMarkdown`) — Phase 5
-  is the UI wiring on top.
+- ⏳ **Phase 5** — write. Sub-phase **5a done + verified live** (scratch PR 1002836):
+  `CommentComposer` (textarea, Ctrl/Cmd+Enter, image paste/drop/picker →
+  `uploadAttachment` → markdown at caret), reply + thread-status controls in
+  `CommentCard`, and click-a-paragraph-to-create-thread in `ReviewView` (anchored
+  via `buildLineThreadContext`); the rail refetches after every mutation. Created
+  threads are **native ADO comments** (resolving one flipped ADO's own "All
+  comments resolved"). Pure logic in `src/lib/review/editor.ts`. Remaining: **5b**
+  edit/delete own comments, **5c** @mention autocomplete.
 - ⏳ **Phase 6** — toolbar popup + options page (allowlist).
 
 ## Locked decisions
