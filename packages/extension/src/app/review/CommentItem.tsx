@@ -4,6 +4,7 @@ import type { Comment } from '../../lib/ado/pr-types';
 import { deleteComment, updateComment } from '../../lib/ado/threads';
 import { renderMarkdown } from '../../lib/markdown/render';
 import { renderMentions } from '../../lib/review/mentions';
+import { absoluteTime, relativeTime } from '../../lib/review/time';
 
 import { CommentComposer } from './CommentComposer';
 import { DeleteIcon, EditIcon, LinkIcon } from './Icons';
@@ -70,6 +71,16 @@ export function CommentItem(props: CommentItemProps) {
                     <img class="acr-comment__avatar" src={props.comment.author.imageUrl} alt="" />
                 </Show>
                 <span class="acr-comment__author">{props.comment.author.displayName}</span>
+                <Show when={relativeTime(props.comment.publishedDate, Date.now())}>
+                    {(rel) => (
+                        <span
+                            class="acr-comment__time"
+                            title={absoluteTime(props.comment.publishedDate)}
+                        >
+                            {rel()}
+                        </span>
+                    )}
+                </Show>
                 <span class="acr-comment__tools" on:click={stop}>
                     <button
                         class="acr-iconbtn"

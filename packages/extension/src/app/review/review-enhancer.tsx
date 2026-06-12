@@ -18,6 +18,11 @@ const REVIEW_ITEM_ID = 'ado-companion-review-item';
 // handlers (which otherwise steal focus to the global search box).
 const KEY_EVENTS = ['keydown', 'keyup', 'keypress', 'input', 'paste'] as const;
 
+// Review-mode intent, kept across the per-file remounts the reconcile loop does
+// when ADO navigates to another file in the tree — so Review stays "on" while
+// you browse files. Cleared only when the user picks another view.
+let stickyPrId: number | null = null;
+
 function isElement(node: EventTarget): node is HTMLElement {
     return node instanceof HTMLElement;
 }
@@ -98,7 +103,10 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                     ?.setAttribute('aria-checked', isActive() ? 'true' : 'false');
             }
 
-            function deactivate(): void {
+            function deactivate(clearIntent: boolean): void {
+                if (clearIntent) {
+                    stickyPrId = null;
+                }
                 if (!isActive()) {
                     return;
                 }
@@ -122,6 +130,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 if (!pane) {
                     return;
                 }
+                stickyPrId = context.pullRequestId;
 
                 // The overlay covers the native content; also hide it so it can't
                 // catch scroll/focus underneath.
@@ -134,6 +143,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
 
                 island = document.createElement('div');
                 island.dataset['adoCompanion'] = 'review-island';
+                island.dataset['file'] = context.filePath;
                 island.style.position = 'absolute';
                 island.style.inset = '0';
                 island.style.zIndex = '4';
@@ -225,19 +235,39 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                     (node) => isElement(node) && node.classList.contains('bolt-split-button-main'),
                 );
                 if (inNativeMenuItem || inMainButton) {
-                    deactivate();
+                    deactivate(true);
                 }
             }
 
             document.addEventListener('click', onChevronClick, true);
             document.addEventListener('click', onExitClick, true);
 
+            // Stay in Review across file navigation: if the user was in Review,
+            // re-enter it for the newly-loaded file once its pane is present.
+            if (context && stickyPrId === context.pullRequestId) {
+                let attempts = 0;
+                const tryActivate = (): void => {
+                    if (isActive()) {
+                        return;
+                    }
+                    if (document.querySelector(FLEX_PANE_SELECTOR)) {
+                        activate();
+                        return;
+                    }
+                    attempts += 1;
+                    if (attempts < 40) {
+                        requestAnimationFrame(tryActivate);
+                    }
+                };
+                requestAnimationFrame(tryActivate);
+            }
+
             return {
                 marker,
                 cleanup(): void {
                     document.removeEventListener('click', onChevronClick, true);
                     document.removeEventListener('click', onExitClick, true);
-                    deactivate();
+                    deactivate(false);
                     document.getElementById(REVIEW_ITEM_ID)?.remove();
                     marker.remove();
                 },

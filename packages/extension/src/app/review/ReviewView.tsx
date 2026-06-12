@@ -225,11 +225,12 @@ export function ReviewView(props: ReviewViewProps) {
         const endRaw = endBlock.dataset['sourceEndLine'] ?? endBlock.dataset['sourceLine'];
         const endLine = Number(endRaw);
         const rect = range.getBoundingClientRect();
+        const aboveTop = rect.top - 32;
         return {
             startLine,
             endLine: Number.isNaN(endLine) ? startLine : Math.max(startLine, endLine),
-            top: rect.top,
-            left: Math.min(rect.right + 6, window.innerWidth - 44),
+            top: aboveTop >= 6 ? aboveTop : rect.bottom + 6,
+            left: Math.min(Math.max(rect.left, 6), window.innerWidth - 40),
         };
     }
 

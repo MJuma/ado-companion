@@ -49,7 +49,7 @@ export const reviewStyles = `
 .acr-rail__slot { position: absolute; left: 16px; right: 0; transition: top .12s ease; }
 
 /* Anchored blocks in the rendered doc */
-.acr-anchored { cursor: pointer; box-shadow: -6px 0 0 rgba(var(--palette-neutral-30, 200, 200, 200), .7); }
+.acr-anchored { box-shadow: -6px 0 0 rgba(var(--palette-neutral-30, 200, 200, 200), .7); }
 .acr-anchored:hover { box-shadow: -6px 0 0 var(--communication-foreground, #0067b8); }
 .acr-anchored--active {
     box-shadow: -6px 0 0 var(--communication-foreground, #0067b8);
@@ -74,6 +74,7 @@ export const reviewStyles = `
 .acr-comment__head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .acr-comment__avatar { width: 20px; height: 20px; border-radius: 50%; flex: 0 0 auto; }
 .acr-comment__author { font-weight: 600; }
+.acr-comment__time { font-size: 11px; color: var(--text-secondary-color, #6b6b6b); }
 .acr-comment__tools { margin-left: auto; display: inline-flex; gap: 1px; opacity: 0; transition: opacity .1s ease; }
 .acr-card:hover .acr-comment__tools, .acr-comment__tools:focus-within { opacity: 1; }
 .acr-iconbtn {
@@ -95,9 +96,8 @@ export const reviewStyles = `
 .acr-comment__body > :first-child { margin-top: 0; }
 .acr-comment__body > :last-child { margin-bottom: 0; }
 
-/* Click-to-comment affordance on doc blocks */
-.acr-doc [data-source-line] { position: relative; }
-.acr-doc [data-source-line]:hover { cursor: pointer; box-shadow: -6px 0 0 rgba(var(--palette-neutral-30, 200, 200, 200), .4); }
+/* Document text is selectable (no click-to-comment affordance). */
+.acr-doc { cursor: auto; }
 
 /* Composer + controls */
 .acr-card__footer { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(var(--palette-neutral-20, 224, 224, 224), .5); }
