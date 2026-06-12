@@ -38,6 +38,15 @@ WXT generates `.wxt/` (tsconfig + ambient types) which `tsc` and oxlint depend o
 - **Chrome / Edge** → Manifest V3 (`.output/chrome-mv3/`). Edge consumes the Chrome build.
 - **Firefox** → Manifest V2 by default (`.output/firefox-mv2/`). This is WXT's default and is fully functional. To target Firefox MV3, set `manifestVersion`/per-browser config in `wxt.config.ts`.
 
+## Dev runner browser
+
+`pnpm dev:extension` launches a browser via WXT's web-ext runner, which uses
+chrome-launcher — that only finds Google Chrome and errors with "No Chrome
+installations found" on Edge-only machines. `wxt.config.ts` therefore sets
+`webExt.binaries` to an Edge binary (Edge runs the chrome-mv3 build). Override
+the binary with the `WXT_BROWSER_BINARY` env var; if no Edge is found, WXT's
+default Chrome lookup is left in place.
+
 ## Build & zip outputs
 
 - `wxt build` → `.output/chrome-mv3/`; `wxt build -b firefox` → `.output/firefox-mv2/`.
