@@ -224,6 +224,7 @@ export function ReviewView(props: ReviewViewProps) {
                                             </span>
                                             <CommentComposer
                                                 prBaseUrl={prBaseUrl()}
+                                                organizationUrl={props.context.organizationUrl}
                                                 placeholder="Comment on this section…"
                                                 submitLabel="Comment"
                                                 onSubmit={submitNewThread}
@@ -256,6 +257,7 @@ export function ReviewView(props: ReviewViewProps) {
                                                         thread={thread}
                                                         active={activeId() === thread.id}
                                                         prBaseUrl={prBaseUrl()}
+                                                        organizationUrl={props.context.organizationUrl}
                                                         currentUserId={currentUser()?.id ?? null}
                                                         onActivate={(id) => focusThread(id, 'block')}
                                                         onChanged={() => void refetchThreads()}

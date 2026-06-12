@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
 
-import { fakeResponse, fetchUrl, stubFetch } from './fetch.mock';
-import { fetchCurrentUser } from './identities';
+import { fakeResponse, fetchJsonBody, fetchUrl, stubFetch } from './fetch.mock';
+import { fetchCurrentUser, searchIdentities } from './identities';
 
 let fetchMock: Mock;
 
@@ -45,5 +45,45 @@ describe('fetchCurrentUser', () => {
         const user = await fetchCurrentUser('https://dev.azure.com/o');
 
         expect(user).toEqual({ id: 'u2', displayName: 'Bob', imageUrl: undefined });
+    });
+});
+
+describe('searchIdentities', () => {
+    it('returns nothing for a blank query without calling the API', async () => {
+        expect(await searchIdentities('https://dev.azure.com/o', '   ')).toEqual([]);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('maps identities with a localId and posts the query', async () => {
+        fetchMock.mockResolvedValue(
+            fakeResponse({
+                jsonValue: {
+                    results: [
+                        {
+                            identities: [
+                                { localId: 'g1', displayName: 'Jane Doe', mail: 'jane@x.com' },
+                                { localId: null, displayName: 'No Local' },
+                                { displayName: 'No Id' },
+                                { localId: 'g2', displayName: 'Bob', signInAddress: 'bob@x.com' },
+                            ],
+                        },
+                    ],
+                },
+            }),
+        );
+
+        const results = await searchIdentities('https://dev.azure.com/o', 'ja');
+
+        expect(results).toEqual([
+            { id: 'g1', displayName: 'Jane Doe', mail: 'jane@x.com' },
+            { id: 'g2', displayName: 'Bob', mail: 'bob@x.com' },
+        ]);
+        expect(fetchUrl(fetchMock)).toContain('/_apis/IdentityPicker/Identities');
+        expect((fetchJsonBody(fetchMock) as { query: string }).query).toBe('ja');
+    });
+
+    it('handles an empty result set', async () => {
+        fetchMock.mockResolvedValue(fakeResponse({ jsonValue: { results: [] } }));
+        expect(await searchIdentities('https://dev.azure.com/o', 'zzz')).toEqual([]);
     });
 });

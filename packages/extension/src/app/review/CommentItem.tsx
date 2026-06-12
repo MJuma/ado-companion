@@ -3,6 +3,7 @@ import { createSignal, Show } from 'solid-js';
 import type { Comment } from '../../lib/ado/pr-types';
 import { deleteComment, updateComment } from '../../lib/ado/threads';
 import { renderMarkdown } from '../../lib/markdown/render';
+import { renderMentions } from '../../lib/review/mentions';
 
 import { CommentComposer } from './CommentComposer';
 
@@ -10,6 +11,7 @@ interface CommentItemProps {
     comment: Comment;
     threadId: number;
     prBaseUrl: string;
+    organizationUrl: string;
     canEdit: boolean;
     onChanged: () => void;
 }
@@ -57,6 +59,7 @@ export function CommentItem(props: CommentItemProps) {
                     <div class="acr-comment__edit" on:click={stop}>
                         <CommentComposer
                             prBaseUrl={props.prBaseUrl}
+                            organizationUrl={props.organizationUrl}
                             initialValue={props.comment.content}
                             submitLabel="Save"
                             onSubmit={saveEdit}
@@ -67,7 +70,7 @@ export function CommentItem(props: CommentItemProps) {
             >
                 <div
                     class="acr-comment__body markdown-content"
-                    innerHTML={renderMarkdown(props.comment.content)}
+                    innerHTML={renderMarkdown(renderMentions(props.comment.content))}
                 />
                 <Show when={props.canEdit}>
                     <Show

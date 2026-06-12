@@ -29,6 +29,7 @@ interface CommentCardProps {
     thread: CommentThread;
     active: boolean;
     prBaseUrl: string;
+    organizationUrl: string;
     currentUserId: string | null;
     onActivate: (threadId: number) => void;
     onChanged: () => void;
@@ -80,6 +81,7 @@ export function CommentCard(props: CommentCardProps) {
                         comment={comment}
                         threadId={props.thread.id}
                         prBaseUrl={props.prBaseUrl}
+                        organizationUrl={props.organizationUrl}
                         canEdit={comment.author.id === props.currentUserId}
                         onChanged={props.onChanged}
                     />
@@ -121,6 +123,7 @@ export function CommentCard(props: CommentCardProps) {
                 >
                     <CommentComposer
                         prBaseUrl={props.prBaseUrl}
+                        organizationUrl={props.organizationUrl}
                         placeholder="Reply…"
                         submitLabel="Reply"
                         onSubmit={reply}

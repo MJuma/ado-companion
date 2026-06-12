@@ -89,7 +89,7 @@ export const reviewStyles = `
 .acr-card__reply { margin-top: 10px; }
 .acr-new { background: rgba(var(--palette-neutral-8, 0, 0, 0), .25); border-color: var(--communication-foreground, #0067b8); cursor: default; }
 
-.acr-composer { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.acr-composer { position: relative; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .acr-composer__input {
     width: 100%;
     min-height: 64px;
@@ -154,4 +154,20 @@ export const reviewStyles = `
 .acr-linkbtn:hover:not(:disabled) { text-decoration: underline; }
 .acr-linkbtn:disabled { opacity: .5; cursor: default; }
 .acr-linkbtn--danger { color: var(--status-error-text, #c4314b); }
+
+.acr-mentions {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid rgba(var(--palette-neutral-30, 200, 200, 200), 1);
+    border-radius: 4px;
+    background: var(--callout-background-color, var(--background-color, #ffffff));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
+}
+.acr-mentions__item { display: flex; flex-direction: column; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
+.acr-mentions__item--active, .acr-mentions__item:hover { background: rgba(var(--palette-neutral-8, 0, 0, 0), .4); }
+.acr-mentions__name { font-size: 13px; }
+.acr-mentions__mail { font-size: 11px; color: var(--text-secondary-color, #6b6b6b); }
 `;
