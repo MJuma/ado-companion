@@ -138,4 +138,20 @@ export const reviewStyles = `
     color: var(--text-primary-color, #242424);
     cursor: pointer;
 }
+
+.acr-comment__actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.acr-comment__confirm { font-size: 12px; color: var(--text-secondary-color, #6b6b6b); }
+.acr-comment__edit { margin-top: 4px; }
+.acr-linkbtn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--communication-foreground, #0067b8);
+    cursor: pointer;
+}
+.acr-linkbtn:hover:not(:disabled) { text-decoration: underline; }
+.acr-linkbtn:disabled { opacity: .5; cursor: default; }
+.acr-linkbtn--danger { color: var(--status-error-text, #c4314b); }
 `;

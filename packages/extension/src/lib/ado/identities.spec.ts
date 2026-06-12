@@ -28,7 +28,7 @@ describe('fetchCurrentUser', () => {
 
         expect(user).toEqual({ id: 'u1', displayName: 'Jane', imageUrl: 'http://img' });
         expect(fetchUrl(fetchMock)).toBe(
-            'https://dev.azure.com/o/_apis/connectionData?api-version=7.1',
+            'https://dev.azure.com/o/_apis/connectionData?api-version=7.1-preview',
         );
     });
 

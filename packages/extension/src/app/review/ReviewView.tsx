@@ -1,5 +1,6 @@
 import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
 
+import { fetchCurrentUser } from '../../lib/ado/identities';
 import { getFileContent } from '../../lib/ado/items';
 import { getPrApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
@@ -47,6 +48,11 @@ export function ReviewView(props: ReviewViewProps) {
     );
 
     const prBaseUrl = (): string => getPrApiBaseUrl(props.context);
+
+    const [currentUser] = createResource(
+        () => props.context,
+        (context) => fetchCurrentUser(context.organizationUrl).catch(() => null),
+    );
 
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
@@ -250,6 +256,7 @@ export function ReviewView(props: ReviewViewProps) {
                                                         thread={thread}
                                                         active={activeId() === thread.id}
                                                         prBaseUrl={prBaseUrl()}
+                                                        currentUserId={currentUser()?.id ?? null}
                                                         onActivate={(id) => focusThread(id, 'block')}
                                                         onChanged={() => void refetchThreads()}
                                                     />

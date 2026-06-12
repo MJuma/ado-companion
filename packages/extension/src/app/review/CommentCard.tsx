@@ -3,9 +3,9 @@ import { createSignal, For, Show } from 'solid-js';
 import { ThreadStatus, isResolvedStatus } from '../../lib/ado/pr-types';
 import type { CommentThread } from '../../lib/ado/pr-types';
 import { addReply, setThreadStatus } from '../../lib/ado/threads';
-import { renderMarkdown } from '../../lib/markdown/render';
 
 import { CommentComposer } from './CommentComposer';
+import { CommentItem } from './CommentItem';
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Active',
@@ -29,6 +29,7 @@ interface CommentCardProps {
     thread: CommentThread;
     active: boolean;
     prBaseUrl: string;
+    currentUserId: string | null;
     onActivate: (threadId: number) => void;
     onChanged: () => void;
 }
@@ -75,18 +76,13 @@ export function CommentCard(props: CommentCardProps) {
             </Show>
             <For each={comments()}>
                 {(comment) => (
-                    <div class="acr-comment">
-                        <div class="acr-comment__head">
-                            <Show when={comment.author.imageUrl}>
-                                <img class="acr-comment__avatar" src={comment.author.imageUrl} alt="" />
-                            </Show>
-                            <span class="acr-comment__author">{comment.author.displayName}</span>
-                        </div>
-                        <div
-                            class="acr-comment__body markdown-content"
-                            innerHTML={renderMarkdown(comment.content)}
-                        />
-                    </div>
+                    <CommentItem
+                        comment={comment}
+                        threadId={props.thread.id}
+                        prBaseUrl={props.prBaseUrl}
+                        canEdit={comment.author.id === props.currentUserId}
+                        onChanged={props.onChanged}
+                    />
                 )}
             </For>
             <div
