@@ -39,23 +39,33 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
   default (enabled, empty allowlist) runs everywhere. Logic unit-tested; the pages
   follow the repo's build + manual verification (playwright-cli can't open
   `chrome-extension://` pages).
+- ✅ **UX refinements** (verified live on PR 1002836): "Review" is now an entry in
+  ADO's **view-switcher dropdown** (not a separate button); the island **overlays
+  the file-content pane** (`.vss-Splitter--pane-flexible`) so the file tree stays
+  and it fills full width; selecting another view exits. Commenting is
+  **selection-based**: select text → floating "+" → composer popover anchored to
+  the selection's source line(s). The composer **autofocuses**, shows a **live
+  preview**, and has **no image button** (paste/drop still auto-uploads). The
+  island stops key events propagating so ADO's search can't hijack typing.
 
 ## Locked decisions
 
-- **Surface**: native "Review" pivot beside Raw content/Preview, **PR-only**;
-  in-page **Shadow DOM island** + Word-style comment rail; built on a reusable
-  **surface-enhancer framework** (a registry for future ADO page enhancements).
-  Not an iframe/overlay (would feel bolted-on). File nav stays ADO's.
+- **Surface**: native **"Review" entry in ADO's view dropdown** (Side-by-side /
+  Inline / Raw content / Preview / Review), **PR-only**; in-page **Shadow DOM
+  island overlaying the file-content pane** (tree + toolbar stay) + comment rail;
+  built on a reusable **surface-enhancer framework**. Not an iframe (would feel
+  bolted-on). File nav stays ADO's.
 - **Render ourselves** with markdown-it (`data-source-line`) + DOMPurify, styled
   to match ADO's Preview. Exotic markdown (mermaid, work-item links, `[[_TOC_]]`) later.
-- **Anchoring**: line/block for everyone — interoperable with native comments
-  (line-based `threadContext` is the universal contract). Phrase-highlight (thread
-  `properties`) and true character offsets are later, additive, degrade-gracefully layers.
+- **Commenting is selection-based**: select text → floating button → composer
+  popover; the thread is anchored to the selection's source **line range**
+  (line/block is the interoperable contract with native ADO comments). Sub-line
+  char offsets / phrase-highlight are later additive layers.
 - **Scope**: any ADO PR `.md` on `dev.azure.com` + legacy `*.visualstudio.com`
   (cloud only); optional allowlist setting.
 - Images incl. **Git LFS** in v1 (lightbox later); full thread-status controls
-  (resolve/close/won't-fix/by-design/reactivate); clipboard/drag **image paste-upload**;
-  toolbar popup (settings → options page). PR-approval vote stays native in DevOps.
+  (resolve/close/won't-fix/by-design/reactivate); clipboard/drag **image paste-upload**
+  (no button); toolbar popup (settings → options page). PR-approval vote stays native.
 
 Full rationale: session file `markdown-review-plan.md`.
 
