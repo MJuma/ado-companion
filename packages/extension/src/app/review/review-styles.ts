@@ -79,4 +79,63 @@ export const reviewStyles = `
 .acr-comment__body { font-size: 13px; }
 .acr-comment__body > :first-child { margin-top: 0; }
 .acr-comment__body > :last-child { margin-bottom: 0; }
+
+/* Click-to-comment affordance on doc blocks */
+.acr-doc [data-source-line] { position: relative; }
+.acr-doc [data-source-line]:hover { cursor: pointer; box-shadow: -6px 0 0 rgba(var(--palette-neutral-30, 200, 200, 200), .4); }
+
+/* Composer + controls */
+.acr-card__footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.acr-card__reply { margin-top: 10px; }
+.acr-new { background: rgba(var(--palette-neutral-8, 0, 0, 0), .25); border-color: var(--communication-foreground, #0067b8); cursor: default; }
+
+.acr-composer { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.acr-composer__input {
+    width: 100%;
+    min-height: 64px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary-color, #242424);
+    background: var(--background-color, #ffffff);
+    border: 1px solid rgba(var(--palette-neutral-30, 200, 200, 200), 1);
+    border-radius: 4px;
+    padding: 8px;
+}
+.acr-composer__input:focus { outline: none; border-color: var(--communication-foreground, #0067b8); }
+.acr-composer__actions { display: flex; align-items: center; gap: 8px; }
+.acr-composer__spacer { flex: 1 1 auto; }
+.acr-composer__hint { font-size: 12px; color: var(--text-secondary-color, #6b6b6b); }
+.acr-composer__error { font-size: 12px; color: var(--status-error-text, #c4314b); }
+
+.acr-btn {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(var(--palette-neutral-30, 200, 200, 200), 1);
+    background: rgba(var(--palette-neutral-4, 245, 245, 245), .6);
+    color: var(--text-primary-color, #242424);
+    cursor: pointer;
+}
+.acr-btn:hover:not(:disabled) { background: rgba(var(--palette-neutral-8, 0, 0, 0), .25); }
+.acr-btn:disabled { opacity: .5; cursor: default; }
+.acr-btn--primary {
+    background: var(--communication-background, #0067b8);
+    border-color: var(--communication-background, #0067b8);
+    color: #ffffff;
+}
+.acr-btn--primary:hover:not(:disabled) { background: var(--communication-foreground, #005a9e); }
+
+.acr-select {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(var(--palette-neutral-30, 200, 200, 200), 1);
+    background: var(--background-color, #ffffff);
+    color: var(--text-primary-color, #242424);
+    cursor: pointer;
+}
 `;

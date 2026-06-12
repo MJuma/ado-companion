@@ -29,6 +29,27 @@ export async function listThreads(prBaseUrl: string): Promise<CommentThread[]> {
     return response.value;
 }
 
+/**
+ * Build the right-side (current/source) `threadContext` for a new comment
+ * anchored to a range of source lines. ADO highlights from `startLine` to
+ * `endLine`; `endOffset` is the 1-based end column (pass the end line's length
+ * plus one to cover the whole line).
+ */
+export function buildLineThreadContext(
+    filePath: string,
+    startLine: number,
+    endLine: number,
+    endOffset = 1,
+): ThreadContext {
+    return {
+        filePath,
+        rightFileStart: { line: startLine, offset: 1 },
+        rightFileEnd: { line: endLine, offset: Math.max(endOffset, 1) },
+        leftFileStart: null,
+        leftFileEnd: null,
+    };
+}
+
 export async function createThread(
     prBaseUrl: string,
     input: NewThreadInput,

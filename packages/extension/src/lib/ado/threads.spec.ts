@@ -6,6 +6,7 @@ import { ThreadStatus } from './pr-types';
 import type { ThreadContext } from './pr-types';
 import {
     addReply,
+    buildLineThreadContext,
     createThread,
     deleteComment,
     listThreads,
@@ -179,5 +180,29 @@ describe('addReply with mentions', () => {
 
         const body = fetchJsonBody(fetchMock) as { mentions?: unknown[] };
         expect(body.mentions).toHaveLength(1);
+    });
+});
+
+describe('buildLineThreadContext', () => {
+    it('anchors a single line on the right side and leaves the left side null', () => {
+        const ctx = buildLineThreadContext('/docs/spec.md', 12, 12, 40);
+        expect(ctx).toEqual({
+            filePath: '/docs/spec.md',
+            rightFileStart: { line: 12, offset: 1 },
+            rightFileEnd: { line: 12, offset: 40 },
+            leftFileStart: null,
+            leftFileEnd: null,
+        });
+    });
+
+    it('spans a block from start to end line', () => {
+        const ctx = buildLineThreadContext('/a.md', 5, 8);
+        expect(ctx.rightFileStart).toEqual({ line: 5, offset: 1 });
+        expect(ctx.rightFileEnd).toEqual({ line: 8, offset: 1 });
+    });
+
+    it('never emits an end offset below 1', () => {
+        const ctx = buildLineThreadContext('/a.md', 3, 3, 0);
+        expect(ctx.rightFileEnd?.offset).toBe(1);
     });
 });

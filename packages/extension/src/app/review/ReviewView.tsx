@@ -3,13 +3,14 @@ import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { getFileContent } from '../../lib/ado/items';
 import { getPrApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
-import { isFileThread } from '../../lib/ado/pr-types';
+import { ThreadStatus, isFileThread } from '../../lib/ado/pr-types';
 import type { CommentThread } from '../../lib/ado/pr-types';
-import { listThreads } from '../../lib/ado/threads';
+import { buildLineThreadContext, createThread, listThreads } from '../../lib/ado/threads';
 import { anchorThreads } from '../../lib/markdown/anchor';
 import { renderMarkdown } from '../../lib/markdown/render';
 
 import { CommentCard } from './CommentCard';
+import { CommentComposer } from './CommentComposer';
 
 interface ReviewViewProps {
     context: PrContext;
@@ -17,6 +18,12 @@ interface ReviewViewProps {
 
 function threadLine(thread: CommentThread): number {
     return thread.threadContext?.rightFileStart?.line ?? Number.MAX_SAFE_INTEGER;
+}
+
+function hasTextSelection(node: Node): boolean {
+    const root = node.getRootNode() as unknown as { getSelection?: () => Selection | null };
+    const selection = root.getSelection ? root.getSelection() : window.getSelection();
+    return Boolean(selection && !selection.isCollapsed);
 }
 
 export function ReviewView(props: ReviewViewProps) {
@@ -28,7 +35,7 @@ export function ReviewView(props: ReviewViewProps) {
         },
     );
 
-    const [threads] = createResource(
+    const [threads, { refetch: refetchThreads }] = createResource(
         () => props.context,
         async (context): Promise<CommentThread[]> => {
             const all = await listThreads(getPrApiBaseUrl(context));
@@ -39,9 +46,14 @@ export function ReviewView(props: ReviewViewProps) {
         },
     );
 
+    const prBaseUrl = (): string => getPrApiBaseUrl(props.context);
+
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
     const [activeId, setActiveId] = createSignal<number | null>(null);
+    const [newThread, setNewThread] = createSignal<{ startLine: number; endLine: number } | null>(
+        null,
+    );
 
     // Highlight rendered blocks that carry comments, once doc + threads are ready.
     createEffect(() => {
@@ -116,15 +128,57 @@ export function ReviewView(props: ReviewViewProps) {
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    function startNewThread(block: HTMLElement): void {
+        const startLine = Number(block.dataset['sourceLine']);
+        if (Number.isNaN(startLine)) {
+            return;
+        }
+        const endAttr = block.dataset['sourceEndLine'];
+        const parsedEnd = endAttr ? Number(endAttr) : startLine;
+        setActiveId(null);
+        setNewThread({ startLine, endLine: Number.isNaN(parsedEnd) ? startLine : parsedEnd });
+        requestAnimationFrame(() => {
+            railEl?.querySelector('.acr-new')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }
+
     function onDocClick(event: MouseEvent): void {
-        const block = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-thread-id]');
+        const block = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+            '[data-source-line]',
+        );
         if (!block) {
             return;
         }
-        const id = Number(block.dataset['threadId']);
-        if (!Number.isNaN(id)) {
-            focusThread(id, 'card');
+        const existing = block.dataset['threadId'];
+        if (existing) {
+            const id = Number(existing);
+            if (!Number.isNaN(id)) {
+                focusThread(id, 'card');
+            }
+            return;
         }
+        if (hasTextSelection(block)) {
+            return;
+        }
+        startNewThread(block);
+    }
+
+    async function submitNewThread(content: string): Promise<void> {
+        const target = newThread();
+        if (!target) {
+            return;
+        }
+        await createThread(prBaseUrl(), {
+            content,
+            status: ThreadStatus.Active,
+            threadContext: buildLineThreadContext(
+                props.context.filePath,
+                target.startLine,
+                target.endLine,
+            ),
+        });
+        setNewThread(null);
+        void refetchThreads();
     }
 
     return (
@@ -156,6 +210,22 @@ export function ReviewView(props: ReviewViewProps) {
                                     railEl = el;
                                 }}
                             >
+                                <Show when={newThread()}>
+                                    {(target) => (
+                                        <div class="acr-card acr-new">
+                                            <span class="acr-card__status">
+                                                New comment · line {target().startLine}
+                                            </span>
+                                            <CommentComposer
+                                                prBaseUrl={prBaseUrl()}
+                                                placeholder="Comment on this section…"
+                                                submitLabel="Comment"
+                                                onSubmit={submitNewThread}
+                                                onCancel={() => setNewThread(null)}
+                                            />
+                                        </div>
+                                    )}
+                                </Show>
                                 <Show
                                     when={threads()}
                                     fallback={
@@ -166,9 +236,12 @@ export function ReviewView(props: ReviewViewProps) {
                                         <Show
                                             when={list().length > 0}
                                             fallback={
-                                                <div class="acr-rail__status">
-                                                    No comments on this file.
-                                                </div>
+                                                <Show when={!newThread()}>
+                                                    <div class="acr-rail__status">
+                                                        No comments yet. Click a paragraph to
+                                                        comment.
+                                                    </div>
+                                                </Show>
                                             }
                                         >
                                             <For each={list()}>
@@ -176,7 +249,9 @@ export function ReviewView(props: ReviewViewProps) {
                                                     <CommentCard
                                                         thread={thread}
                                                         active={activeId() === thread.id}
+                                                        prBaseUrl={prBaseUrl()}
                                                         onActivate={(id) => focusThread(id, 'block')}
+                                                        onChanged={() => void refetchThreads()}
                                                     />
                                                 )}
                                             </For>
