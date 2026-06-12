@@ -1,0 +1,47 @@
+:root {
+    color-scheme: light dark;
+}
+
+body {
+    margin: 0;
+}
+
+.popup {
+    width: 260px;
+    padding: 16px;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: #242424;
+    background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+    .popup {
+        color: #f3f2f1;
+        background: #1b1a19;
+    }
+}
+
+.popup__title {
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.popup__sub {
+    margin: 2px 0 14px;
+    color: #888888;
+    font-size: 0.85em;
+}
+
+.popup__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.popup__muted {
+    margin: 0 0 14px;
+    color: #888888;
+    font-size: 0.8em;
+}

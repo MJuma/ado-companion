@@ -3,6 +3,8 @@ import { defineContentScript } from 'wxt/utils/define-content-script';
 import { createReviewEnhancer } from '../app/review/review-enhancer';
 import { findStale, planReconcile } from '../lib/enhancers/reconcile';
 import type { SurfaceEnhancer } from '../lib/enhancers/types';
+import { DEFAULT_SETTINGS, isUrlAllowed } from '../lib/settings/allowlist';
+import { loadSettings, watchSettings } from '../lib/settings/settings';
 
 interface ActiveMount {
     key: string;
@@ -17,6 +19,16 @@ export default defineContentScript({
         const active = new Map<string, ActiveMount>();
         let timer: ReturnType<typeof setTimeout> | undefined;
         let running = false;
+        let settings = DEFAULT_SETTINGS;
+
+        void loadSettings().then((loaded) => {
+            settings = loaded;
+            schedule();
+        });
+        watchSettings((updated) => {
+            settings = updated;
+            schedule();
+        });
 
         function schedule(): void {
             if (timer !== undefined) {
@@ -39,6 +51,15 @@ export default defineContentScript({
                 for (const id of findStale(active, (node) => document.contains(node))) {
                     active.get(id)?.cleanup();
                     active.delete(id);
+                }
+
+                // Honor the enabled toggle + optional host allowlist.
+                if (!isUrlAllowed(window.location.href, settings)) {
+                    for (const entry of active.values()) {
+                        entry.cleanup();
+                    }
+                    active.clear();
+                    return;
                 }
 
                 const activeKeys = new Map(
