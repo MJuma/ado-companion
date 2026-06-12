@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'wxt';
 
@@ -27,6 +27,12 @@ function resolveDevBrowserBinary(): string | undefined {
 
 const devBrowserBinary = resolveDevBrowserBinary();
 
+// chrome-launcher writes chrome-out.log into the --user-data-dir but, unlike the
+// temp-dir case, does NOT create that directory when one is passed explicitly —
+// so the dev profile dir must already exist or the launch fails with ENOENT.
+const devProfileDir = resolve('.dev-profile');
+mkdirSync(devProfileDir, { recursive: true });
+
 // WXT configuration.
 //
 // - `srcDir: 'src'` keeps all source under src/ (matches the traverse layout).
@@ -49,7 +55,7 @@ export default defineConfig({
         ...(devBrowserBinary
             ? { binaries: { chrome: devBrowserBinary, edge: devBrowserBinary } }
             : {}),
-        chromiumProfile: resolve('.dev-profile'),
+        chromiumProfile: devProfileDir,
         keepProfileChanges: true,
         chromiumArgs: ['--remote-debugging-port=9222'],
         startUrls: ['https://dev.azure.com'],
