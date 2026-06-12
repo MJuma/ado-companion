@@ -12,6 +12,7 @@ import { renderMarkdown } from '../../lib/markdown/render';
 
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
+import { CommentIcon } from './Icons';
 
 interface ReviewViewProps {
     context: PrContext;
@@ -67,9 +68,53 @@ export function ReviewView(props: ReviewViewProps) {
 
     let docEl: HTMLDivElement | undefined;
     let railEl: HTMLDivElement | undefined;
+    const slotEls = new Map<number, HTMLElement>();
     const [activeId, setActiveId] = createSignal<number | null>(null);
     const [selAnchor, setSelAnchor] = createSignal<SelectionAnchor | null>(null);
     const [composer, setComposer] = createSignal<SelectionAnchor | null>(null);
+    const [cardTops, setCardTops] = createSignal<Record<number, number>>({});
+    const [layoutTick, setLayoutTick] = createSignal(0);
+
+    const resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(reposition);
+    });
+    onCleanup(() => resizeObserver.disconnect());
+
+    // Word-style alignment: place each comment card at the vertical offset of its
+    // anchored block, stacking down to avoid overlaps.
+    function reposition(): void {
+        const list = threads();
+        if (!docEl || !railEl || !list) {
+            return;
+        }
+        const railTop = railEl.getBoundingClientRect().top;
+        const placed = list
+            .map((thread) => {
+                const block = docEl?.querySelector<HTMLElement>(
+                    `[data-thread-id="${thread.id}"]`,
+                );
+                const slot = slotEls.get(thread.id);
+                if (!slot) {
+                    return null;
+                }
+                const desired = block
+                    ? block.getBoundingClientRect().top - railTop
+                    : Number.POSITIVE_INFINITY;
+                return { id: thread.id, desired, height: slot.offsetHeight };
+            })
+            .filter((item): item is { id: number; desired: number; height: number } => item !== null)
+            .sort((a, b) => a.desired - b.desired);
+
+        const next: Record<number, number> = {};
+        let cursor = 0;
+        for (const item of placed) {
+            const base = Number.isFinite(item.desired) ? Math.max(item.desired, 0) : cursor;
+            const top = Math.max(base, cursor);
+            next[item.id] = top;
+            cursor = top + item.height + 8;
+        }
+        setCardTops(next);
+    }
 
     // Highlight rendered blocks that carry comments, once doc + threads are ready.
     createEffect(() => {
@@ -116,7 +161,19 @@ export function ReviewView(props: ReviewViewProps) {
                     el.dataset['threadId'] = String(id);
                 }
             }
+            setLayoutTick((value) => value + 1);
         });
+    });
+
+    // Re-align the comment cards whenever the doc, threads, or layout changes.
+    createEffect(() => {
+        threads();
+        layoutTick();
+        const rendered = !html.loading && html();
+        if (!rendered) {
+            return;
+        }
+        requestAnimationFrame(reposition);
     });
 
     // Reflect the active thread on its anchored block.
@@ -243,8 +300,15 @@ export function ReviewView(props: ReviewViewProps) {
     const onScroll = (): void => {
         setSelAnchor(null);
     };
+    const onResize = (): void => {
+        setLayoutTick((value) => value + 1);
+    };
     document.addEventListener('scroll', onScroll, true);
-    onCleanup(() => document.removeEventListener('scroll', onScroll, true));
+    window.addEventListener('resize', onResize);
+    onCleanup(() => {
+        document.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onResize);
+    });
 
     return (
         <div class="ado-companion-review">
@@ -265,6 +329,7 @@ export function ReviewView(props: ReviewViewProps) {
                                 class="acr-doc markdown-content"
                                 ref={(el) => {
                                     docEl = el;
+                                    resizeObserver.observe(el);
                                 }}
                                 innerHTML={docHtml()}
                                 on:mousedown={onDocMouseDown}
@@ -294,17 +359,46 @@ export function ReviewView(props: ReviewViewProps) {
                                             }
                                         >
                                             <For each={list()}>
-                                                {(thread) => (
-                                                    <CommentCard
-                                                        thread={thread}
-                                                        active={activeId() === thread.id}
-                                                        prBaseUrl={prBaseUrl()}
-                                                        organizationUrl={props.context.organizationUrl}
-                                                        currentUserId={currentUser()?.id ?? null}
-                                                        onActivate={(id) => focusThread(id, 'block')}
-                                                        onChanged={() => void refetchThreads()}
-                                                    />
-                                                )}
+                                                {(thread) => {
+                                                    onCleanup(() => {
+                                                        const el = slotEls.get(thread.id);
+                                                        if (el) {
+                                                            resizeObserver.unobserve(el);
+                                                        }
+                                                        slotEls.delete(thread.id);
+                                                    });
+                                                    return (
+                                                        <div
+                                                            class="acr-rail__slot"
+                                                            data-thread-id={thread.id}
+                                                            style={{
+                                                                top: `${cardTops()[thread.id] ?? 0}px`,
+                                                            }}
+                                                            ref={(el) => {
+                                                                slotEls.set(thread.id, el);
+                                                                resizeObserver.observe(el);
+                                                            }}
+                                                        >
+                                                            <CommentCard
+                                                                thread={thread}
+                                                                active={activeId() === thread.id}
+                                                                prBaseUrl={prBaseUrl()}
+                                                                organizationUrl={
+                                                                    props.context.organizationUrl
+                                                                }
+                                                                currentUserId={
+                                                                    currentUser()?.id ?? null
+                                                                }
+                                                                onActivate={(id) =>
+                                                                    focusThread(id, 'block')
+                                                                }
+                                                                onChanged={() =>
+                                                                    void refetchThreads()
+                                                                }
+                                                            />
+                                                        </div>
+                                                    );
+                                                }}
                                             </For>
                                         </Show>
                                     )}
@@ -325,7 +419,7 @@ export function ReviewView(props: ReviewViewProps) {
                         on:mousedown={(event) => event.preventDefault()}
                         on:click={openComposer}
                     >
-                        <span class="acr-sel-btn__glyph">＋</span>
+                        <CommentIcon size={15} />
                     </button>
                 )}
             </Show>

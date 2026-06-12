@@ -6,6 +6,7 @@ import { renderMarkdown } from '../../lib/markdown/render';
 import { renderMentions } from '../../lib/review/mentions';
 
 import { CommentComposer } from './CommentComposer';
+import { DeleteIcon, EditIcon, LinkIcon } from './Icons';
 
 interface CommentItemProps {
     comment: Comment;
@@ -20,10 +21,17 @@ function stop(event: MouseEvent): void {
     event.stopPropagation();
 }
 
+function commentLink(threadId: number): string {
+    const url = new URL(window.location.href);
+    url.searchParams.set('discussionId', String(threadId));
+    return url.toString();
+}
+
 export function CommentItem(props: CommentItemProps) {
     const [editing, setEditing] = createSignal(false);
     const [confirmingDelete, setConfirmingDelete] = createSignal(false);
     const [busy, setBusy] = createSignal(false);
+    const [copied, setCopied] = createSignal(false);
 
     async function saveEdit(content: string): Promise<void> {
         await updateComment(props.prBaseUrl, props.threadId, props.comment.id, content);
@@ -45,6 +53,16 @@ export function CommentItem(props: CommentItemProps) {
         }
     }
 
+    async function copyLink(): Promise<void> {
+        try {
+            await navigator.clipboard.writeText(commentLink(props.threadId));
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        } catch {
+            setCopied(false);
+        }
+    }
+
     return (
         <div class="acr-comment">
             <div class="acr-comment__head">
@@ -52,6 +70,34 @@ export function CommentItem(props: CommentItemProps) {
                     <img class="acr-comment__avatar" src={props.comment.author.imageUrl} alt="" />
                 </Show>
                 <span class="acr-comment__author">{props.comment.author.displayName}</span>
+                <span class="acr-comment__tools" on:click={stop}>
+                    <button
+                        class="acr-iconbtn"
+                        type="button"
+                        title={copied() ? 'Link copied' : 'Copy link to comment'}
+                        on:click={() => void copyLink()}
+                    >
+                        <LinkIcon />
+                    </button>
+                    <Show when={props.canEdit && !editing()}>
+                        <button
+                            class="acr-iconbtn"
+                            type="button"
+                            title="Edit"
+                            on:click={() => setEditing(true)}
+                        >
+                            <EditIcon />
+                        </button>
+                        <button
+                            class="acr-iconbtn acr-iconbtn--danger"
+                            type="button"
+                            title="Delete"
+                            on:click={() => setConfirmingDelete(true)}
+                        >
+                            <DeleteIcon />
+                        </button>
+                    </Show>
+                </span>
             </div>
             <Show
                 when={!editing()}
@@ -72,47 +118,25 @@ export function CommentItem(props: CommentItemProps) {
                     class="acr-comment__body markdown-content"
                     innerHTML={renderMarkdown(renderMentions(props.comment.content))}
                 />
-                <Show when={props.canEdit}>
-                    <Show
-                        when={!confirmingDelete()}
-                        fallback={
-                            <div class="acr-comment__actions" on:click={stop}>
-                                <span class="acr-comment__confirm">Delete this comment?</span>
-                                <button
-                                    class="acr-linkbtn acr-linkbtn--danger"
-                                    type="button"
-                                    disabled={busy()}
-                                    on:click={() => void remove()}
-                                >
-                                    Delete
-                                </button>
-                                <button
-                                    class="acr-linkbtn"
-                                    type="button"
-                                    on:click={() => setConfirmingDelete(false)}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        }
-                    >
-                        <div class="acr-comment__actions" on:click={stop}>
-                            <button
-                                class="acr-linkbtn"
-                                type="button"
-                                on:click={() => setEditing(true)}
-                            >
-                                Edit
-                            </button>
-                            <button
-                                class="acr-linkbtn"
-                                type="button"
-                                on:click={() => setConfirmingDelete(true)}
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </Show>
+                <Show when={confirmingDelete()}>
+                    <div class="acr-comment__actions" on:click={stop}>
+                        <span class="acr-comment__confirm">Delete this comment?</span>
+                        <button
+                            class="acr-linkbtn acr-linkbtn--danger"
+                            type="button"
+                            disabled={busy()}
+                            on:click={() => void remove()}
+                        >
+                            Delete
+                        </button>
+                        <button
+                            class="acr-linkbtn"
+                            type="button"
+                            on:click={() => setConfirmingDelete(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </Show>
             </Show>
         </div>

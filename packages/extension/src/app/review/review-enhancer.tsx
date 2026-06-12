@@ -11,6 +11,7 @@ const FLEX_PANE_SELECTOR =
     '.repos-changes-explorer-splitter .vss-Splitter--pane-flexible';
 const VIEW_MENU_ID = '__bolt-changeViewerMode';
 const VIEW_CHEVRON_SELECTOR = '.repos-compare-toolbar .bolt-split-button-option';
+const VIEW_MAIN_SELECTOR = '.repos-compare-toolbar .bolt-split-button-main';
 const REVIEW_ITEM_ID = 'ado-companion-review-item';
 
 // Keystrokes typed in the island must not reach ADO's document-level keyboard
@@ -55,9 +56,40 @@ export function createReviewEnhancer(): SurfaceEnhancer {
             let island: HTMLElement | null = null;
             let dispose: (() => void) | null = null;
             let hiddenSiblings: HTMLElement[] = [];
+            let savedMainLabel: string | null = null;
+            let savedMainIcon: string | null = null;
 
             function isActive(): boolean {
                 return island !== null;
+            }
+
+            // Reflect "Review" on the split button's main label + icon while active.
+            function setMainButton(toReview: boolean): void {
+                const label = document.querySelector<HTMLElement>(
+                    `${VIEW_MAIN_SELECTOR} .bolt-button-text`,
+                );
+                const icon = document.querySelector<HTMLElement>(
+                    `${VIEW_MAIN_SELECTOR} .fabric-icon`,
+                );
+                if (toReview) {
+                    if (label && savedMainLabel === null) {
+                        savedMainLabel = label.textContent;
+                        label.textContent = 'Review';
+                    }
+                    if (icon && savedMainIcon === null) {
+                        savedMainIcon = icon.className;
+                        icon.className = icon.className.replace(/ms-Icon--\S+/, 'ms-Icon--Comment');
+                    }
+                } else {
+                    if (label && savedMainLabel !== null) {
+                        label.textContent = savedMainLabel;
+                    }
+                    if (icon && savedMainIcon !== null) {
+                        icon.className = savedMainIcon;
+                    }
+                    savedMainLabel = null;
+                    savedMainIcon = null;
+                }
             }
 
             function markMenuItemSelected(): void {
@@ -78,6 +110,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                     el.style.removeProperty('display');
                 }
                 hiddenSiblings = [];
+                setMainButton(false);
                 markMenuItemSelected();
             }
 
@@ -118,6 +151,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 pane.appendChild(island);
 
                 dispose = render(() => <ReviewView context={context} />, mountPoint);
+                setMainButton(true);
                 markMenuItemSelected();
             }
 

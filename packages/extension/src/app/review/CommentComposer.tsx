@@ -261,9 +261,9 @@ export function CommentComposer(props: CommentComposerProps) {
                 />
             </Show>
             <div class="acr-composer__actions">
-                <span class="acr-composer__hint">
-                    {uploading() ? 'Uploading image…' : 'Paste an image to attach it.'}
-                </span>
+                <Show when={uploading()}>
+                    <span class="acr-composer__hint">Uploading image…</span>
+                </Show>
                 <Show when={error()}>
                     <span class="acr-composer__error">{error()}</span>
                 </Show>
