@@ -23,6 +23,10 @@ const LINK =
 const LIKE =
     'M6.3 14H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h2.3v7zm1.2-7.6 2-3.6a.8.8 0 0 1 1.5.4V6h2.4a1.2 1.2 0 0 1 1.18 1.42l-.86 4.6A1.5 1.5 0 0 1 12.24 13.2H7.5V6.4z';
 const CHEVRON = 'M4 6h8l-4 5z';
+const CHEVRON_DOWN =
+    'M3.2 5.7a1 1 0 0 1 1.4 0L8 9.1l3.4-3.4a1 1 0 1 1 1.4 1.4l-4.1 4.1a1 1 0 0 1-1.4 0L3.2 7.1a1 1 0 0 1 0-1.4z';
+const CHEVRON_UP =
+    'M3.2 10.3a1 1 0 0 0 1.4 0L8 6.9l3.4 3.4a1 1 0 0 0 1.4-1.4L8.7 4.8a1 1 0 0 0-1.4 0L3.2 8.9a1 1 0 0 0 0 1.4z';
 
 export function CommentIcon(props: IconProps): JSX.Element {
     return svg(COMMENT, props.size ?? 16);
@@ -46,4 +50,12 @@ export function LikeIcon(props: IconProps): JSX.Element {
 
 export function ChevronIcon(props: IconProps): JSX.Element {
     return svg(CHEVRON, props.size ?? 16);
+}
+
+export function ChevronUpIcon(props: IconProps): JSX.Element {
+    return svg(CHEVRON_UP, props.size ?? 16);
+}
+
+export function ChevronDownIcon(props: IconProps): JSX.Element {
+    return svg(CHEVRON_DOWN, props.size ?? 16);
 }

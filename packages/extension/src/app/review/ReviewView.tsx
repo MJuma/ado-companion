@@ -23,7 +23,7 @@ import { cacheMentionName } from '../../lib/review/mentions';
 
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
-import { CommentIcon } from './Icons';
+import { ChevronDownIcon, ChevronUpIcon, CommentIcon } from './Icons';
 import { STATUS_OPTIONS } from './status';
 
 type StatusFilter = 'all' | ThreadStatus;
@@ -348,6 +348,26 @@ export function ReviewView(props: ReviewViewProps) {
         target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    // Step to the next/previous comment in the current (filtered) order, wrapping
+    // at either end. Starts from the active thread, or the first/last when none.
+    function jumpComment(direction: 1 | -1): void {
+        const list = visibleThreads();
+        if (list.length === 0) {
+            return;
+        }
+        const currentIdx = list.findIndex((thread) => thread.id === activeId());
+        const nextIdx =
+            currentIdx === -1
+                ? direction === 1
+                    ? 0
+                    : list.length - 1
+                : (currentIdx + direction + list.length) % list.length;
+        const next = list[nextIdx];
+        if (next) {
+            focusThread(next.id, 'block');
+        }
+    }
+
     // When ADO links to a specific comment (clicking it in the file tree sets
     // ?discussionId=, without changing the file), scroll to and highlight that
     // thread. Polled because a same-file click is a URL change with no remount.
@@ -557,6 +577,28 @@ export function ReviewView(props: ReviewViewProps) {
                                             {visibleThreads().length === store.list.length
                                                 ? `${store.list.length} ${store.list.length === 1 ? 'thread' : 'threads'}`
                                                 : `${visibleThreads().length} of ${store.list.length}`}
+                                        </span>
+                                        <span class="acr-nav">
+                                            <button
+                                                class="acr-iconbtn"
+                                                type="button"
+                                                title="Previous comment"
+                                                aria-label="Previous comment"
+                                                disabled={visibleThreads().length === 0}
+                                                on:click={() => jumpComment(-1)}
+                                            >
+                                                <ChevronUpIcon size={14} />
+                                            </button>
+                                            <button
+                                                class="acr-iconbtn"
+                                                type="button"
+                                                title="Next comment"
+                                                aria-label="Next comment"
+                                                disabled={visibleThreads().length === 0}
+                                                on:click={() => jumpComment(1)}
+                                            >
+                                                <ChevronDownIcon size={14} />
+                                            </button>
                                         </span>
                                         <span class="acr-toolbar__spacer" />
                                         <select

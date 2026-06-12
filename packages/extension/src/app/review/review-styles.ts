@@ -298,6 +298,9 @@ export const reviewStyles = `
 }
 .acr-filter:hover { border-color: var(--communication-foreground, #0067b8); }
 .acr-filter:focus { outline: none; border-color: var(--communication-foreground, #0067b8); }
+.acr-nav { display: inline-flex; flex: 0 0 auto; gap: 1px; }
+.acr-nav .acr-iconbtn { width: 22px; height: 22px; }
+.acr-iconbtn:disabled { opacity: .4; cursor: default; background: transparent; }
 
 /* Collapse toggle */
 .acr-card__bar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
