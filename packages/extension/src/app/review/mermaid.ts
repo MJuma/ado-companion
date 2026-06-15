@@ -54,6 +54,9 @@ export async function renderMermaidBlocks(root: HTMLElement, dark: boolean): Pro
     }
 
     const mermaid = await loadMermaid();
+    // Mermaid's gantt renderer collapses to a tiny default width; give it an
+    // explicit width based on the available document space so it isn't smushed.
+    const ganttWidth = Math.round(Math.min(Math.max(root.clientWidth - 24, 640), 2400));
     mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
@@ -63,7 +66,7 @@ export async function renderMermaidBlocks(root: HTMLElement, dark: boolean): Pro
         // by the SVG-only DOMPurify pass, which would drop all diagram text.
         htmlLabels: false,
         flowchart: { htmlLabels: false, useMaxWidth: true },
-        gantt: { useMaxWidth: true },
+        gantt: { useMaxWidth: false, useWidth: ganttWidth },
     });
 
     let rendered = false;

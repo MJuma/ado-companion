@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.3.2
+
+### Patch Changes
+
+- Make Mermaid gantt charts use the available width instead of collapsing to a tiny default size, so project timelines render at a readable scale.
+
 ## 0.3.1
 
 ### Patch Changes
