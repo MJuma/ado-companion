@@ -1,16 +1,16 @@
 {
     "name": "ado-companion-extension",
-    "version": "0.3.2",
+    "version": "0.4.0",
     "private": true,
     "type": "module",
     "scripts": {
-        "postinstall": "node scripts/bundle-mermaid.mjs && wxt prepare",
-        "dev": "node scripts/bundle-mermaid.mjs && wxt",
-        "dev:firefox": "node scripts/bundle-mermaid.mjs && wxt -b firefox",
-        "build": "node scripts/bundle-mermaid.mjs && wxt prepare && tsc --noEmit && wxt build",
-        "build:firefox": "node scripts/bundle-mermaid.mjs && wxt prepare && tsc --noEmit && wxt build -b firefox",
-        "zip": "node scripts/bundle-mermaid.mjs && wxt zip",
-        "zip:firefox": "node scripts/bundle-mermaid.mjs && wxt zip -b firefox",
+        "postinstall": "node scripts/bundle-vendor.mjs && wxt prepare",
+        "dev": "node scripts/bundle-vendor.mjs && wxt",
+        "dev:firefox": "node scripts/bundle-vendor.mjs && wxt -b firefox",
+        "build": "node scripts/bundle-vendor.mjs && wxt prepare && tsc --noEmit && wxt build",
+        "build:firefox": "node scripts/bundle-vendor.mjs && wxt prepare && tsc --noEmit && wxt build -b firefox",
+        "zip": "node scripts/bundle-vendor.mjs && wxt zip",
+        "zip:firefox": "node scripts/bundle-vendor.mjs && wxt zip -b firefox",
         "compile": "tsc --noEmit",
         "lint": "oxlint -c ../../oxlintrc.json --tsconfig tsconfig.lint.json --type-aware src/",
         "test": "vitest run"
@@ -19,6 +19,7 @@
         "@fluentui/tokens": "catalog:",
         "@fluentui/web-components": "catalog:",
         "dompurify": "catalog:",
+        "highlight.js": "catalog:",
         "markdown-it": "catalog:",
         "mermaid": "catalog:",
         "solid-js": "catalog:"

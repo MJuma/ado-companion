@@ -37,6 +37,7 @@ import { CommentComposer } from './CommentComposer';
 import { ChevronDownIcon, ChevronUpIcon, CommentIcon } from './Icons';
 import { renderMermaidBlocks } from './mermaid';
 import { STATUS_OPTIONS } from './status';
+import { highlightCodeBlocks } from './syntax';
 
 type StatusFilter = 'all' | ThreadStatus;
 
@@ -247,6 +248,23 @@ export function ReviewView(props: ReviewViewProps) {
         void renderMermaidBlocks(target, dark).then((didRender) => {
             if (didRender) {
                 setMermaidTick((value) => value + 1);
+            }
+        });
+    });
+
+    // Syntax-highlight code blocks (lazy-loads highlight.js on first use). Tags
+    // the doc with the theme so the token colors match ADO's light/dark.
+    createEffect(() => {
+        const ready = !html.loading && html();
+        if (!docEl || !ready) {
+            return;
+        }
+        const target = docEl;
+        const dark = isDarkColor(reviewEl ? getComputedStyle(reviewEl).backgroundColor : '');
+        target.classList.toggle('acr-dark', dark);
+        void highlightCodeBlocks(target).then((didHighlight) => {
+            if (didHighlight) {
+                setLayoutTick((value) => value + 1);
             }
         });
     });

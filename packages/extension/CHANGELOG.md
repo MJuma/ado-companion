@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.4.0
+
+### Minor Changes
+
+- Add syntax highlighting to code blocks in the PR Markdown Review view, themed to match Azure DevOps' light/dark theme. Highlighting uses highlight.js, which is lazy-loaded the first time a document shows a code block (so it doesn't add weight to other pages), and its output is sanitized.
+
 ## 0.3.2
 
 ### Patch Changes

@@ -29,6 +29,28 @@ export const reviewStyles = `
 }
 .markdown-content pre { background: rgba(var(--palette-neutral-8, 0, 0, 0), .4); padding: 12px 14px; border-radius: 6px; overflow: auto; }
 .markdown-content pre code { background: none; padding: 0; }
+
+/* Syntax highlighting (highlight.js) — GitHub light, with dark overrides under .acr-dark */
+.markdown-content .hljs { color: var(--text-primary-color, #24292e); background: transparent; }
+.hljs-comment, .hljs-quote { color: #6a737d; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-section { color: #d73a49; }
+.hljs-string, .hljs-regexp, .hljs-addition { color: #032f62; }
+.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-attr, .hljs-attribute, .hljs-bullet, .hljs-symbol, .hljs-link { color: #005cc5; }
+.hljs-title, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: #6f42c1; }
+.hljs-type, .hljs-built_in, .hljs-params { color: #e36209; }
+.hljs-tag { color: #22863a; }
+.hljs-meta { color: #6a737d; }
+.hljs-deletion { color: #b31d28; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
+.acr-dark .hljs-comment, .acr-dark .hljs-quote { color: #8b949e; }
+.acr-dark .hljs-keyword, .acr-dark .hljs-selector-tag, .acr-dark .hljs-doctag, .acr-dark .hljs-section { color: #ff7b72; }
+.acr-dark .hljs-string, .acr-dark .hljs-regexp, .acr-dark .hljs-addition { color: #a5d6ff; }
+.acr-dark .hljs-number, .acr-dark .hljs-literal, .acr-dark .hljs-variable, .acr-dark .hljs-template-variable, .acr-dark .hljs-attr, .acr-dark .hljs-attribute, .acr-dark .hljs-bullet, .acr-dark .hljs-symbol, .acr-dark .hljs-link { color: #79c0ff; }
+.acr-dark .hljs-title, .acr-dark .hljs-name, .acr-dark .hljs-selector-id, .acr-dark .hljs-selector-class { color: #d2a8ff; }
+.acr-dark .hljs-type, .acr-dark .hljs-built_in, .acr-dark .hljs-params { color: #ffa657; }
+.acr-dark .hljs-tag { color: #7ee787; }
+.acr-dark .hljs-deletion { color: #ffa198; }
 .markdown-content table { border-collapse: collapse; margin: 12px 0; }
 .markdown-content th, .markdown-content td { border: 1px solid rgba(var(--palette-neutral-20, 212, 212, 212), 1); padding: 6px 12px; }
 .markdown-content th { background: rgba(var(--palette-neutral-4, 245, 245, 245), 1); }

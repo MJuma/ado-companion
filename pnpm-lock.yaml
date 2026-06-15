@@ -15,6 +15,9 @@ catalogs:
     dompurify:
       specifier: 3.4.9
       version: 3.4.9
+    highlight.js:
+      specifier: 11.11.1
+      version: 11.11.1
     markdown-it:
       specifier: 14.2.0
       version: 14.2.0
@@ -96,6 +99,9 @@ importers:
       dompurify:
         specifier: 'catalog:'
         version: 3.4.9
+      highlight.js:
+        specifier: 'catalog:'
+        version: 11.11.1
       markdown-it:
         specifier: 'catalog:'
         version: 14.2.0
@@ -2464,6 +2470,10 @@ packages:
 
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
+
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
 
   hookable@5.5.3:
     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
@@ -6255,6 +6265,8 @@ snapshots:
   hast-util-whitespace@3.0.0:
     dependencies:
       '@types/hast': 3.0.4
+
+  highlight.js@11.11.1: {}
 
   hookable@5.5.3: {}
 
