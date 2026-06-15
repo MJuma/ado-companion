@@ -1,6 +1,8 @@
 import DOMPurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
 
+import { normalizeMermaidContainers } from './directives';
+
 // Attributes that map a rendered block back to its 1-based source-markdown
 // lines, so the review UI can anchor comments to the right place.
 export const SOURCE_LINE_ATTR = 'data-source-line';
@@ -51,6 +53,6 @@ function getRenderer(): MarkdownIt {
  * content, so the output is run through DOMPurify.
  */
 export function renderMarkdown(markdown: string): string {
-    const html = getRenderer().render(markdown);
+    const html = getRenderer().render(normalizeMermaidContainers(markdown));
     return DOMPurify.sanitize(html);
 }

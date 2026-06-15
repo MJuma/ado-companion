@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix Mermaid rendering: diagram text was missing (mermaid's HTML `foreignObject` labels were stripped by the SVG sanitizer — now uses SVG text labels), and diagrams written with Azure DevOps' `:::mermaid` directive (rather than a ```mermaid fence) are now rendered too.
+
 ## 0.3.0
 
 ### Minor Changes

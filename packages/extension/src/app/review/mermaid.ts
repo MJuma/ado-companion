@@ -59,6 +59,11 @@ export async function renderMermaidBlocks(root: HTMLElement, dark: boolean): Pro
         securityLevel: 'strict',
         theme: dark ? 'dark' : 'default',
         fontFamily: 'inherit',
+        // Use SVG <text> labels, not <foreignObject> HTML — the latter is stripped
+        // by the SVG-only DOMPurify pass, which would drop all diagram text.
+        htmlLabels: false,
+        flowchart: { htmlLabels: false, useMaxWidth: true },
+        gantt: { useMaxWidth: true },
     });
 
     let rendered = false;

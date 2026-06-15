@@ -43,4 +43,11 @@ describe('renderMarkdown', () => {
         expect(html).toContain('click');
         expect(html).not.toContain('javascript:');
     });
+
+    it('renders an ADO :::mermaid directive as a mermaid code block', () => {
+        const html = renderMarkdown([':::mermaid', 'gantt', '  title Plan', ':::'].join('\n'));
+
+        expect(html).toContain('class="language-mermaid"');
+        expect(html).toContain('gantt');
+    });
 });
