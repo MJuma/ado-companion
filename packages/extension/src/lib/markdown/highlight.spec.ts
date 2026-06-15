@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     findQuoteOffset,
     parseHighlightProp,
+    phraseSourceRange,
     rawLineQuote,
     serializeHighlightProp,
     textOffsetWithin,
@@ -113,5 +114,28 @@ describe('rawLineQuote', () => {
         expect(rawLineQuote(lines, 2, 5, 2, 5)).toBeNull();
         expect(rawLineQuote(lines, 2, 1, 2, 100)).toBeNull();
         expect(rawLineQuote(lines, 9, 1, 9, 5)).toBeNull();
+    });
+});
+
+describe('phraseSourceRange', () => {
+    it('maps a phrase to 1-based source columns', () => {
+        // 'brown' is at index 10 → columns 11..16 (end is exclusive +1).
+        expect(phraseSourceRange('the quick brown fox', 'brown')).toEqual({
+            startOffset: 11,
+            endOffset: 16,
+        });
+    });
+
+    it('uses the hint to pick the nearer of repeated phrases', () => {
+        const line = 'set x then set y';
+        expect(phraseSourceRange(line, 'set', 11)?.startOffset).toBe(12);
+        expect(phraseSourceRange(line, 'set', 0)?.startOffset).toBe(1);
+    });
+
+    it('returns null when the phrase is absent or inputs are missing', () => {
+        expect(phraseSourceRange('plain source', 'missing')).toBeNull();
+        expect(phraseSourceRange(undefined, 'x')).toBeNull();
+        expect(phraseSourceRange('text', undefined)).toBeNull();
+        expect(phraseSourceRange('text', '   ')).toBeNull();
     });
 });

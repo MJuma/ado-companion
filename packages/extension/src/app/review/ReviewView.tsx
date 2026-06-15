@@ -610,10 +610,10 @@ export function ReviewView(props: ReviewViewProps) {
         if (!target) {
             return;
         }
-        const endLineLength = (rawLines()[target.endLine - 1] ?? '').length;
+        const sourceLine = rawLines()[target.startLine - 1];
         await createThread(
             prBaseUrl(),
-            buildNewThreadInput(props.context.filePath, content, { ...target, endLineLength }),
+            buildNewThreadInput(props.context.filePath, content, { ...target, sourceLine }),
         );
         props.onThreadCreated?.();
         closeComposer();

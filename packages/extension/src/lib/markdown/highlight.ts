@@ -138,6 +138,33 @@ export function serializeHighlightProp(quote: string, offset: number): string {
 }
 
 /**
+ * Forward-map a selected phrase to its precise source character range
+ * `{ startOffset, endOffset }` (1-based, ADO column convention) within a single
+ * source line, by locating the rendered quote text. `hint` (the selection's
+ * offset in the rendered block) disambiguates repeated phrases. Returns null
+ * when the quote can't be located verbatim — e.g. it crosses inline markdown
+ * syntax — so callers fall back to a line-level anchor instead of mis-highlighting.
+ */
+export function phraseSourceRange(
+    sourceLine: string | undefined,
+    quote: string | undefined,
+    hint = 0,
+): { startOffset: number; endOffset: number } | null {
+    if (sourceLine === undefined || quote === undefined) {
+        return null;
+    }
+    const needle = quote.trim();
+    if (needle.length === 0) {
+        return null;
+    }
+    const idx = findQuoteOffset(sourceLine, needle, hint);
+    if (idx < 0) {
+        return null;
+    }
+    return { startOffset: idx + 1, endOffset: idx + needle.length + 1 };
+}
+
+/**
  * Best-effort quote for a single-line native comment range, read straight from
  * the raw source line. Returns null for empty/whole-line/multi-line ranges
  * (those would not map cleanly onto the rendered text).

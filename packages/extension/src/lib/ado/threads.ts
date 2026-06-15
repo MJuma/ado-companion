@@ -32,19 +32,20 @@ export async function listThreads(prBaseUrl: string): Promise<CommentThread[]> {
 
 /**
  * Build the right-side (current/source) `threadContext` for a new comment
- * anchored to a range of source lines. ADO highlights from `startLine` to
- * `endLine`; `endOffset` is the 1-based end column (pass the end line's length
- * plus one to cover the whole line).
+ * anchored to a range of source characters. ADO highlights from
+ * (`startLine`, `startOffset`) to (`endLine`, `endOffset`) — 1-based columns.
+ * Defaults to the line start; pass precise columns to anchor an exact phrase.
  */
 export function buildLineThreadContext(
     filePath: string,
     startLine: number,
     endLine: number,
     endOffset = 1,
+    startOffset = 1,
 ): ThreadContext {
     return {
         filePath,
-        rightFileStart: { line: startLine, offset: 1 },
+        rightFileStart: { line: startLine, offset: Math.max(startOffset, 1) },
         rightFileEnd: { line: endLine, offset: Math.max(endOffset, 1) },
         leftFileStart: null,
         leftFileEnd: null,

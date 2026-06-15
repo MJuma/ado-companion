@@ -8,31 +8,47 @@ const FILE = '/docs/spec.md';
 const SUPPORTS_MARKDOWN_PROP = 'Microsoft.TeamFoundation.Discussion.SupportsMarkdown';
 
 describe('buildNewThreadInput', () => {
-    it('anchors an Active thread to the selected source line range', () => {
+    it('anchors a single-line phrase to its exact source columns', () => {
         const input = buildNewThreadInput(FILE, 'a note', {
             startLine: 12,
-            endLine: 14,
-            endLineLength: 42,
+            endLine: 12,
+            sourceLine: 'the quick brown fox jumps',
+            quote: 'brown fox',
+            quoteOffset: 10,
         });
 
         expect(input.content).toBe('a note');
         expect(input.status).toBe(ThreadStatus.Active);
         expect(input.threadContext?.filePath).toBe(FILE);
-        expect(input.threadContext?.rightFileStart).toEqual({ line: 12, offset: 1 });
-        expect(input.threadContext?.rightFileEnd?.line).toBe(14);
+        // 'brown fox' starts at index 10 (1-based column 11) and is 9 chars long.
+        expect(input.threadContext?.rightFileStart).toEqual({ line: 12, offset: 11 });
+        expect(input.threadContext?.rightFileEnd).toEqual({ line: 12, offset: 20 });
     });
 
-    it('spans the whole end line so the range is not degenerate', () => {
+    it('falls back to a line-level anchor when the phrase is not in the source line', () => {
         const input = buildNewThreadInput(FILE, 'note', {
             startLine: 5,
             endLine: 5,
-            endLineLength: 30,
+            sourceLine: 'plain text without the phrase',
+            quote: 'rendered **bold** that differs',
+            quoteOffset: 0,
         });
 
-        // A real (non-zero-length) range is required for ADO native views to
-        // anchor + expand the thread like their own comments.
+        // Unlocatable phrase → degenerate line anchor, not a whole-row highlight.
         expect(input.threadContext?.rightFileStart).toEqual({ line: 5, offset: 1 });
-        expect(input.threadContext?.rightFileEnd).toEqual({ line: 5, offset: 31 });
+        expect(input.threadContext?.rightFileEnd).toEqual({ line: 5, offset: 1 });
+    });
+
+    it('anchors a multi-line selection across the line range without a column span', () => {
+        const input = buildNewThreadInput(FILE, 'note', {
+            startLine: 45,
+            endLine: 47,
+            sourceLine: 'first line of the selection',
+            quote: 'first line of the selection and more',
+        });
+
+        expect(input.threadContext?.rightFileStart).toEqual({ line: 45, offset: 1 });
+        expect(input.threadContext?.rightFileEnd).toEqual({ line: 47, offset: 1 });
     });
 
     it('always tags the thread as markdown-capable', () => {
@@ -44,6 +60,7 @@ describe('buildNewThreadInput', () => {
         const input = buildNewThreadInput(FILE, 'note', {
             startLine: 5,
             endLine: 5,
+            sourceLine: 'here is some phrase to find',
             quote: 'some phrase',
             quoteOffset: 7,
         });

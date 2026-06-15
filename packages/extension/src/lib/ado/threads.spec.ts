@@ -208,6 +208,12 @@ describe('buildLineThreadContext', () => {
         const ctx = buildLineThreadContext('/a.md', 3, 3, 0);
         expect(ctx.rightFileEnd?.offset).toBe(1);
     });
+
+    it('anchors an exact phrase via start and end columns', () => {
+        const ctx = buildLineThreadContext('/a.md', 7, 7, 20, 11);
+        expect(ctx.rightFileStart).toEqual({ line: 7, offset: 11 });
+        expect(ctx.rightFileEnd).toEqual({ line: 7, offset: 20 });
+    });
 });
 
 describe('likeComment / unlikeComment', () => {

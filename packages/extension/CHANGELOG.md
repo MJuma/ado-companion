@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.4.2
+
+### Patch Changes
+
+- Anchor single-line Review comments to the exact selected phrase so ADO's native file views highlight just that phrase instead of the whole row. The thread's character range is now computed from the phrase's position in the source line; multi-line or unlocatable selections fall back to a line-level anchor (no highlight) rather than spanning the whole line.
+
 ## 0.4.1
 
 ### Patch Changes
