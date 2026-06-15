@@ -15,6 +15,20 @@ const VIEW_MAIN_SELECTOR = '.repos-compare-toolbar .bolt-split-button-main';
 const REVIEW_ITEM_ID = 'ado-companion-review-item';
 const HOST_CLASS = 'ado-companion-review-host';
 const HOST_STYLE_ID = 'ado-companion-host-style';
+const SELECTED_FILE_ROW_SELECTOR = '.bolt-tree-row.selected';
+// Native inline/diff discussion widgets — counting these lets us wait until the
+// editor has finished rendering ALL threads (count stops changing) before the
+// re-fetch, so a comment-heavy file doesn't trip an early re-select.
+const NATIVE_DISCUSSION_SELECTOR = '.repos-discussion-thread, .repos-editor-discussion-expand';
+
+// Poll for the native editor to finish rendering its discussions before forcing
+// the re-fetch, instead of guessing a fixed delay (slower/bigger PRs mount
+// later, comment-heavy files render in waves).
+const NATIVE_REFRESH_POLL_MS = 150;
+const NATIVE_REFRESH_MAX_POLLS = 80;
+// Consider the editor "settled" once the discussion count holds steady this many
+// consecutive polls.
+const NATIVE_REFRESH_STABLE_TICKS = 4;
 
 // Hide ADO's native file content while Review overlays it, using visibility
 // (NOT display) so ADO keeps laying it out — display:none broke ADO's rendering
@@ -39,8 +53,50 @@ const KEY_EVENTS = ['keydown', 'keyup', 'keypress', 'input', 'paste'] as const;
 // you browse files. Cleared only when the user picks another view.
 let stickyPrId: number | null = null;
 
+// Set when the user creates a thread inside Review. ADO's native file views
+// render externally-created threads collapsed (and omit them from the file
+// tree) until a fresh discussion fetch — re-selecting the open file forces that
+// fetch. We defer it until the user leaves Review for a native view so Review
+// itself isn't torn down mid-session.
+let pendingNativeRefresh = false;
+
 function isElement(node: EventTarget): node is HTMLElement {
     return node instanceof HTMLElement;
+}
+
+/**
+ * Force ADO to re-fetch the open file's discussions so threads created in
+ * Review render expanded (and appear in the file tree) in the native view the
+ * user just switched to. Re-selecting the already-open file in ADO's tree is
+ * what triggers a fresh fetch — but it must happen AFTER the native editor has
+ * mounted and rendered its (collapsed) discussion widgets, otherwise the
+ * re-fetch only updates the file tree and the editor still shows collapsed. So
+ * poll for the native discussion widgets (capped) before re-selecting.
+ */
+function refreshNativeDiscussions(): void {
+    let attempts = 0;
+    let lastCount = -1;
+    let stableTicks = 0;
+    const tryRefresh = (): void => {
+        attempts += 1;
+        const row = document.querySelector<HTMLElement>(SELECTED_FILE_ROW_SELECTOR);
+        const count = document.querySelectorAll(NATIVE_DISCUSSION_SELECTOR).length;
+        if (count > 0 && count === lastCount) {
+            stableTicks += 1;
+        } else {
+            stableTicks = 0;
+        }
+        lastCount = count;
+        const settled = count > 0 && stableTicks >= NATIVE_REFRESH_STABLE_TICKS;
+        if (row && (settled || attempts >= NATIVE_REFRESH_MAX_POLLS)) {
+            row.click();
+            return;
+        }
+        if (attempts < NATIVE_REFRESH_MAX_POLLS) {
+            window.setTimeout(tryRefresh, NATIVE_REFRESH_POLL_MS);
+        }
+    };
+    window.setTimeout(tryRefresh, NATIVE_REFRESH_POLL_MS);
 }
 
 /** Close ADO's open view menu the way it expects (Escape on the menu). */
@@ -171,7 +227,17 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 shadow.append(style, mountPoint);
                 pane.appendChild(island);
 
-                dispose = render(() => <ReviewView context={context} />, mountPoint);
+                dispose = render(
+                    () => (
+                        <ReviewView
+                            context={context}
+                            onThreadCreated={() => {
+                                pendingNativeRefresh = true;
+                            }}
+                        />
+                    ),
+                    mountPoint,
+                );
                 setMainButton(true);
                 markMenuItemSelected();
             }
@@ -247,6 +313,10 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 );
                 if (inNativeMenuItem || inMainButton) {
                     deactivate(true);
+                    if (pendingNativeRefresh) {
+                        pendingNativeRefresh = false;
+                        refreshNativeDiscussions();
+                    }
                 }
             }
 

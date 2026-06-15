@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.4.1
+
+### Patch Changes
+
+- Fix comments created in the Review view appearing collapsed and missing from the file tree in ADO's native file views. ADO renders externally-created threads collapsed until a fresh discussion fetch, so on leaving Review for a native view the extension now re-selects the open file to force that fetch — comments render expanded and show in the tree without a manual page refresh. New threads are also tagged as markdown-capable and anchored to a real character range to match ADO's own comments.
+
 ## 0.4.0
 
 ### Minor Changes

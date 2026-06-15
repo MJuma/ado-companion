@@ -19,8 +19,8 @@ export interface NewThreadInput {
     status?: ThreadStatus;
     mentions?: CommentMention[];
     pullRequestThreadContext?: PullRequestThreadContext;
-    /** Custom string properties; serialized to ADO's `$type`/`$value` form. */
-    properties?: Record<string, string>;
+    /** Custom properties; numbers serialize as Int32, strings as String. */
+    properties?: Record<string, string | number>;
 }
 
 export async function listThreads(prBaseUrl: string): Promise<CommentThread[]> {
@@ -78,7 +78,9 @@ export async function createThread(
         body.properties = Object.fromEntries(
             Object.entries(input.properties).map(([key, value]) => [
                 key,
-                { '$type': 'System.String', '$value': value },
+                typeof value === 'number'
+                    ? { '$type': 'System.Int32', '$value': value }
+                    : { '$type': 'System.String', '$value': value },
             ]),
         );
     }
