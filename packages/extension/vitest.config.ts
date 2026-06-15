@@ -23,16 +23,12 @@ export default defineConfig({
             enabled: true,
             provider: 'v8',
             reporter: ['text', 'cobertura'],
-            // Coverage is enforced on pure logic. Entrypoints and UI components
-            // are DOM/browser glue, validated via build + manual testing.
-            include: ['src/**/*.{ts,tsx}'],
-            exclude: [
-                '**/*.d.ts',
-                '**/*.spec.{ts,tsx}',
-                '**/*.mock.ts',
-                'src/entrypoints/**',
-                'src/app/**',
-            ],
+            // Coverage is enforced on pure logic in src/lib. Entrypoints and UI
+            // components are DOM/browser glue, validated via build + manual
+            // testing. Scoping `include` to src/lib (rather than excluding the
+            // glue) prevents a future top-level src/ file from averaging in.
+            include: ['src/lib/**/*.{ts,tsx}'],
+            exclude: ['**/*.d.ts', '**/*.spec.{ts,tsx}', '**/*.mock.ts'],
             thresholds: {
                 statements: 85,
                 branches: 80,

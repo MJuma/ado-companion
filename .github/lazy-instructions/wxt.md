@@ -19,14 +19,18 @@ Auto-imports are off, so import explicitly. The paths matter — `wxt/config` do
 | `defineConfig` (config file only) | `wxt` |
 | `defineBackground` | `wxt/utils/define-background` |
 | `defineContentScript` | `wxt/utils/define-content-script` |
-| `createShadowRootUi` | `wxt/utils/content-script-ui/shadow-root` |
 | `WxtVitest`, `fakeBrowser` (tests) | `wxt/testing` |
+
+> We do **not** use WXT's `createShadowRootUi` / `cssInjectionMode: 'ui'`. The
+> content host runs the **surface-enhancer** framework; each enhancer mounts its
+> own island with a manual `element.attachShadow({ mode: 'open' })` and injects
+> its CSS as a `<style>` string into that shadow root (see `src/app/review/review-enhancer.tsx`).
 
 ## Entrypoints
 
 Under `src/entrypoints/`:
 - `background.ts` — `defineBackground(() => { ... })`.
-- `content.tsx` — `defineContentScript({ matches, cssInjectionMode: 'ui', main })`. JSX requires the `.tsx` extension.
+- `content.tsx` — `defineContentScript({ matches, main })` runs the enhancer host (no `cssInjectionMode`). JSX requires the `.tsx` extension.
 - `popup/index.html` + `popup/main.tsx` — HTML entrypoint that mounts the Solid `Popup`.
 
 ## Generated types — `wxt prepare`

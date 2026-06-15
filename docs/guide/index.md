@@ -7,7 +7,7 @@ It runs as a content script on `dev.azure.com` and legacy `*.visualstudio.com` o
 ## Highlights
 
 - **Cross-browser** — one extension for Chrome, Edge, and Firefox.
-- **Native look & feel** — built with [Fluent UI Web Components](https://github.com/microsoft/fluentui/tree/master/packages/web-components), themed to match Azure DevOps (light and dark).
+- **Native look & feel** — built with [Fluent UI Web Components](https://github.com/microsoft/fluentui/tree/master/packages/web-components); the in-page review UI inherits Azure DevOps' theme (light and dark).
 - **Lightweight** — built with [SolidJS](https://solidjs.com) and [WXT](https://wxt.dev) for a small, fast bundle.
 - **Isolated** — UI is injected via Shadow DOM so it never clashes with Azure DevOps styles.
 

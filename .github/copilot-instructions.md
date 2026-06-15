@@ -2,7 +2,7 @@
 
 A cross-browser extension (Chrome, Edge, Firefox) that adds extra functionality to **Azure DevOps** (`dev.azure.com` and legacy `*.visualstudio.com`). It runs as a content script that injects UI into ADO pages, plus a popup and background service worker.
 
-Built with **WXT** (Manifest V3 tooling), **SolidJS**, and **Fluent UI Web Components**. Uses **pnpm workspaces** with **pnpm 10**.
+Built with **WXT** (Manifest V3 tooling — Chrome/Edge ship MV3, Firefox builds MV2), **SolidJS**, and **Fluent UI Web Components**. Uses **pnpm workspaces** with **pnpm 10**.
 
 ## Repository Structure
 

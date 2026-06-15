@@ -35,6 +35,6 @@
     },
     "devDependencies": {
         "@changesets/cli": "catalog:development",
-        "vitepress": "^1.6.4"
+        "vitepress": "catalog:development"
     }
 }

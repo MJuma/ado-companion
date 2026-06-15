@@ -15,13 +15,12 @@ import { getPrApiBaseUrl, getRepoApiBaseUrl } from '../../lib/ado/pr';
 import type { PrContext } from '../../lib/ado/pr';
 import { ThreadStatus, isFileThread } from '../../lib/ado/pr-types';
 import type { CommentThread, IdentityRef } from '../../lib/ado/pr-types';
-import { buildLineThreadContext, createThread, listThreads } from '../../lib/ado/threads';
+import { createThread, listThreads } from '../../lib/ado/threads';
 import { anchorThreads } from '../../lib/markdown/anchor';
 import {
     findQuoteOffset,
     parseHighlightProp,
     rawLineQuote,
-    serializeHighlightProp,
     textOffsetWithin,
     unwrapHighlights,
     wrapTextRange,
@@ -30,6 +29,7 @@ import type { HighlightAnchor } from '../../lib/markdown/highlight';
 import { resolveImageSrc } from '../../lib/markdown/images';
 import { renderMarkdown } from '../../lib/markdown/render';
 import { cacheMentionName } from '../../lib/review/mentions';
+import { buildNewThreadInput, HIGHLIGHT_PROP } from '../../lib/review/new-thread';
 
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
@@ -56,7 +56,6 @@ interface SelectionAnchor {
     quoteOffset?: number;
 }
 
-const HIGHLIGHT_PROP = 'ADOCompanion.Highlight';
 const HIGHLIGHT_CLASS = 'acr-hl';
 
 function threadLine(thread: CommentThread): number {
@@ -569,19 +568,10 @@ export function ReviewView(props: ReviewViewProps) {
         if (!target) {
             return;
         }
-        const properties = target.quote
-            ? { [HIGHLIGHT_PROP]: serializeHighlightProp(target.quote, target.quoteOffset ?? 0) }
-            : undefined;
-        await createThread(prBaseUrl(), {
-            content,
-            status: ThreadStatus.Active,
-            threadContext: buildLineThreadContext(
-                props.context.filePath,
-                target.startLine,
-                target.endLine,
-            ),
-            properties,
-        });
+        await createThread(
+            prBaseUrl(),
+            buildNewThreadInput(props.context.filePath, content, target),
+        );
         closeComposer();
         void refetchThreads();
     }
