@@ -1,16 +1,16 @@
 {
     "name": "ado-companion-extension",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "private": true,
     "type": "module",
     "scripts": {
-        "postinstall": "wxt prepare",
-        "dev": "wxt",
-        "dev:firefox": "wxt -b firefox",
-        "build": "wxt prepare && tsc --noEmit && wxt build",
-        "build:firefox": "wxt prepare && tsc --noEmit && wxt build -b firefox",
-        "zip": "wxt zip",
-        "zip:firefox": "wxt zip -b firefox",
+        "postinstall": "node scripts/bundle-mermaid.mjs && wxt prepare",
+        "dev": "node scripts/bundle-mermaid.mjs && wxt",
+        "dev:firefox": "node scripts/bundle-mermaid.mjs && wxt -b firefox",
+        "build": "node scripts/bundle-mermaid.mjs && wxt prepare && tsc --noEmit && wxt build",
+        "build:firefox": "node scripts/bundle-mermaid.mjs && wxt prepare && tsc --noEmit && wxt build -b firefox",
+        "zip": "node scripts/bundle-mermaid.mjs && wxt zip",
+        "zip:firefox": "node scripts/bundle-mermaid.mjs && wxt zip -b firefox",
         "compile": "tsc --noEmit",
         "lint": "oxlint -c ../../oxlintrc.json --tsconfig tsconfig.lint.json --type-aware src/",
         "test": "vitest run"
@@ -20,6 +20,7 @@
         "@fluentui/web-components": "catalog:",
         "dompurify": "catalog:",
         "markdown-it": "catalog:",
+        "mermaid": "catalog:",
         "solid-js": "catalog:"
     },
     "devDependencies": {
@@ -28,6 +29,7 @@
         "@types/node": "catalog:development",
         "@vitest/coverage-v8": "catalog:development",
         "@wxt-dev/module-solid": "catalog:development",
+        "esbuild": "catalog:development",
         "jsdom": "catalog:development",
         "oxlint": "catalog:development",
         "oxlint-tsgolint": "catalog:development",

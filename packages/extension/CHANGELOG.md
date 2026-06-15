@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.3.0
+
+### Minor Changes
+
+- Render Mermaid diagrams in the PR Markdown Review view. Fenced `mermaid` code blocks are now drawn as diagrams (themed to match Azure DevOps' light/dark theme) instead of shown as raw code. Mermaid is lazy-loaded the first time a document actually contains a diagram, so it doesn't add weight to other pages, and its SVG output is sanitized.
+
 ## 0.2.0
 
 ### Minor Changes

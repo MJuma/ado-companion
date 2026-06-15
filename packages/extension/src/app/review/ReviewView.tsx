@@ -30,10 +30,12 @@ import { resolveImageSrc } from '../../lib/markdown/images';
 import { renderMarkdown } from '../../lib/markdown/render';
 import { cacheMentionName } from '../../lib/review/mentions';
 import { buildNewThreadInput, HIGHLIGHT_PROP } from '../../lib/review/new-thread';
+import { isDarkColor } from '../../lib/review/theme';
 
 import { CommentCard } from './CommentCard';
 import { CommentComposer } from './CommentComposer';
 import { ChevronDownIcon, ChevronUpIcon, CommentIcon } from './Icons';
+import { renderMermaidBlocks } from './mermaid';
 import { STATUS_OPTIONS } from './status';
 
 type StatusFilter = 'all' | ThreadStatus;
@@ -229,6 +231,25 @@ export function ReviewView(props: ReviewViewProps) {
     const [composer, setComposer] = createSignal<SelectionAnchor | null>(null);
     const [cardTops, setCardTops] = createSignal<Record<number, number>>({});
     const [layoutTick, setLayoutTick] = createSignal(0);
+    // Bumped after mermaid diagrams replace their code blocks, so the anchoring
+    // effect re-captures the new diagram elements.
+    const [mermaidTick, setMermaidTick] = createSignal(0);
+
+    // Render any ```mermaid blocks into themed SVG (lazy-loads mermaid on first
+    // use). Re-anchors afterwards since the diagrams replace the code blocks.
+    createEffect(() => {
+        const ready = !html.loading && html();
+        if (!docEl || !ready) {
+            return;
+        }
+        const target = docEl;
+        const dark = isDarkColor(reviewEl ? getComputedStyle(reviewEl).backgroundColor : '');
+        void renderMermaidBlocks(target, dark).then((didRender) => {
+            if (didRender) {
+                setMermaidTick((value) => value + 1);
+            }
+        });
+    });
 
     const resizeObserver = new ResizeObserver(() => {
         requestAnimationFrame(reposition);
@@ -320,6 +341,7 @@ export function ReviewView(props: ReviewViewProps) {
     createEffect(() => {
         const list = visibleThreads();
         const rendered = !html.loading && html();
+        mermaidTick();
         if (!docEl || !rendered) {
             return;
         }

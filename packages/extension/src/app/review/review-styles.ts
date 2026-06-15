@@ -37,6 +37,12 @@ export const reviewStyles = `
 .markdown-content a { color: var(--communication-foreground, #0067b8); text-decoration: none; }
 .markdown-content a:hover { text-decoration: underline; }
 
+/* Mermaid diagrams (rendered from fenced mermaid code blocks) */
+.acr-mermaid { margin: 14px 0; text-align: center; overflow-x: auto; }
+.acr-mermaid svg { max-width: 100%; height: auto; }
+.acr-mermaid--error { text-align: left; }
+.acr-mermaid__error { font-size: 12px; color: var(--status-error-text, #c4314b); margin-bottom: 6px; }
+
 /* Two-pane layout: rendered doc + comment rail (toolbar lives in the rail) */
 .acr-layout { display: flex; align-items: flex-start; gap: 0; min-height: 100%; }
 .acr-doc { flex: 1 1 auto; min-width: 0; padding-top: 16px; padding-right: 6px; }

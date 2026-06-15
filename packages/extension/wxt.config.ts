@@ -68,5 +68,13 @@ export default defineConfig({
             'https://dev.azure.com/*',
             'https://*.visualstudio.com/*',
         ],
+        // The mermaid bundle (public/vendor/) is lazy-loaded by the content
+        // script via runtime URL, so it must be web-accessible to ADO pages.
+        web_accessible_resources: [
+            {
+                resources: ['vendor/*'],
+                matches: ['https://dev.azure.com/*', 'https://*.visualstudio.com/*'],
+            },
+        ],
     },
 });
