@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>ADO Companion — Extra functionality for Azure DevOps</title>
+        <meta
+            name="description"
+            content="A lightweight, native-feeling extension for Chrome, Edge, and Firefox that supercharges Azure DevOps pull requests — Markdown review, activity filters, and pipeline status, right in the page."
+        />
+        <meta property="og:title" content="ADO Companion" />
+        <meta
+            property="og:description"
+            content="Supercharge Azure DevOps pull requests — Markdown review, activity filters, and pipeline status, right in the page."
+        />
+        <meta property="og:type" content="website" />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b78d0'/%3E%3Cpath d='M9 21l7-12 7 12-7-3z' fill='white'/%3E%3C/svg%3E"
+        />
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <header class="nav">
+            <a class="brand" href="#top">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" width="28" height="28">
+                        <rect width="32" height="32" rx="7" fill="url(#g)"></rect>
+                        <path d="M9 21l7-12 7 12-7-3z" fill="#fff"></path>
+                        <defs>
+                            <linearGradient id="g" x1="0" y1="0" x2="32" y2="32">
+                                <stop offset="0" stop-color="#0b78d0"></stop>
+                                <stop offset="1" stop-color="#19c3b1"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <span>ADO Companion</span>
+            </a>
+            <nav class="nav__links">
+                <a href="#features">Features</a>
+                <a href="#install">Install</a>
+                <a href="https://github.com/MJuma/ado-companion" rel="noreferrer">GitHub</a>
+            </nav>
+        </header>
+
+        <main id="top">
+            <section class="hero">
+                <p class="hero__eyebrow">Chrome · Edge · Firefox</p>
+                <h1 class="hero__title">Supercharge Azure DevOps<br />pull requests.</h1>
+                <p class="hero__sub">
+                    A lightweight, native-feeling browser extension that adds the review tools
+                    Azure DevOps is missing — Markdown review, activity filters, and live pipeline
+                    status — right inside the pages you already use.
+                </p>
+                <div class="downloads">
+                    <a
+                        class="btn btn--chrome"
+                        href="https://github.com/MJuma/ado-companion/releases/latest/download/ado-companion-chrome.zip"
+                    >
+                        <span class="btn__icon" aria-hidden="true">⬇</span>
+                        <span>Chrome</span>
+                    </a>
+                    <a
+                        class="btn btn--edge"
+                        href="https://github.com/MJuma/ado-companion/releases/latest/download/ado-companion-chrome.zip"
+                    >
+                        <span class="btn__icon" aria-hidden="true">⬇</span>
+                        <span>Edge</span>
+                    </a>
+                    <a
+                        class="btn btn--firefox"
+                        href="https://github.com/MJuma/ado-companion/releases/latest/download/ado-companion-firefox.xpi"
+                    >
+                        <span class="btn__icon" aria-hidden="true">⬇</span>
+                        <span>Firefox</span>
+                    </a>
+                </div>
+                <p class="hero__note">
+                    Free &amp; open source · Firefox build is Mozilla-signed and auto-updates ·
+                    <a
+                        href="https://github.com/MJuma/ado-companion/releases/latest"
+                        rel="noreferrer"
+                        >latest release</a
+                    >
+                </p>
+            </section>
+
+            <section id="features" class="section">
+                <h2 class="section__title">What it adds</h2>
+                <p class="section__lead">
+                    Three focused enhancements that live natively in the pull request UI. Each can
+                    be toggled on or off in settings.
+                </p>
+                <div class="cards">
+                    <article class="card">
+                        <div class="card__icon" aria-hidden="true">📝</div>
+                        <h3>PR Markdown Review</h3>
+                        <p>
+                            A native <strong>“Review”</strong> view renders Markdown specs as a
+                            clean document with a Word-style comment rail synced to real Azure
+                            DevOps threads. Comment on the exact phrase you select, @mention
+                            teammates, paste images, and finally see
+                            <strong>Mermaid diagrams</strong> and
+                            <strong>syntax-highlighted code</strong>.
+                        </p>
+                    </article>
+                    <article class="card">
+                        <div class="card__icon" aria-hidden="true">🧭</div>
+                        <h3>PR Activity Filter</h3>
+                        <p>
+                            Cut through the noise on the Overview timeline with filter tabs —
+                            <strong>Comments</strong>, <strong>Commits</strong>,
+                            <strong>Actions</strong>, and <strong>System Messages</strong> — so you
+                            can find what actually happened without scrolling past bot chatter.
+                        </p>
+                    </article>
+                    <article class="card">
+                        <div class="card__icon" aria-hidden="true">🚦</div>
+                        <h3>PR Pipelines Tab</h3>
+                        <p>
+                            See every pipeline’s <strong>stages and jobs</strong> right inside the
+                            pull request — color-coded status circles that link straight to the
+                            logs, a live status badge on the tab, and auto-refresh, so you never
+                            leave the PR to check a build.
+                        </p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="strip">
+                <div class="strip__item">
+                    <strong>Native look &amp; feel</strong>
+                    <span>Matches Azure DevOps light &amp; dark themes</span>
+                </div>
+                <div class="strip__item">
+                    <strong>Lightweight</strong><span>Built with SolidJS &amp; WXT</span>
+                </div>
+                <div class="strip__item">
+                    <strong>Isolated</strong><span>Injected via Shadow DOM — no style clashes</span>
+                </div>
+                <div class="strip__item">
+                    <strong>Open source</strong><span>Inspect every line on GitHub</span>
+                </div>
+            </section>
+
+            <section id="install" class="section">
+                <h2 class="section__title">Install in a minute</h2>
+                <div class="install">
+                    <article class="install__col">
+                        <h3>Chrome &amp; Edge</h3>
+                        <ol>
+                            <li>Download the <strong>Chrome</strong> zip above and unzip it.</li>
+                            <li>
+                                Open <code>chrome://extensions</code> (or
+                                <code>edge://extensions</code>).
+                            </li>
+                            <li>Turn on <strong>Developer mode</strong>.</li>
+                            <li>Click <strong>Load unpacked</strong> and pick the folder.</li>
+                        </ol>
+                    </article>
+                    <article class="install__col">
+                        <h3>Firefox</h3>
+                        <ol>
+                            <li>Download the <strong>Firefox</strong> <code>.xpi</code> above.</li>
+                            <li>Open <code>about:addons</code>.</li>
+                            <li>
+                                Gear ⚙ → <strong>Install Add-on From File…</strong> → pick the
+                                <code>.xpi</code>.
+                            </li>
+                            <li>
+                                Confirm — it’s Mozilla-signed and <strong>auto-updates</strong> from
+                                here on.
+                            </li>
+                        </ol>
+                    </article>
+                </div>
+                <p class="install__note">
+                    Open any <code>dev.azure.com</code> pull request and the new views appear. Store
+                    listings (one-click install) for Chrome, Edge, and Firefox are planned.
+                </p>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer__links">
+                <a href="https://github.com/MJuma/ado-companion" rel="noreferrer">GitHub</a>
+                <span aria-hidden="true">·</span>
+                <a href="https://github.com/MJuma/ado-companion/releases" rel="noreferrer">Releases</a>
+            </div>
+            <p>Open source. Not affiliated with Microsoft or Azure DevOps.</p>
+        </footer>
+    </body>
+</html>

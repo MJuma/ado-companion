@@ -18,9 +18,6 @@
         "dev:firefox": "pnpm --filter ado-companion-extension run dev:firefox",
         "zip": "pnpm --filter ado-companion-extension run zip",
         "zip:firefox": "pnpm --filter ado-companion-extension run zip:firefox",
-        "docs:dev": "vitepress dev docs",
-        "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs",
         "changeset": "changeset",
         "changeset:version": "changeset version"
     },
@@ -34,7 +31,6 @@
         ]
     },
     "devDependencies": {
-        "@changesets/cli": "catalog:development",
-        "vitepress": "catalog:development"
+        "@changesets/cli": "catalog:development"
     }
 }

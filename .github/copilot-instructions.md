@@ -20,7 +20,7 @@ Each feature has its own **enable toggle** in settings (master switch + per-feat
 |------|---------|---------|
 | `packages/extension` | `ado-companion-extension` | The WXT extension — entrypoints (content/popup/background), Solid UI, pure logic |
 | `packages/scripts` | — | Repo automation (`check-changeset.sh`) |
-| `docs/` | — | VitePress documentation + install site |
+| `site/` | — | Static landing page (plain HTML/CSS) deployed to GitHub Pages |
 
 Dependency versions are centralized in the `catalog:` / `catalog:development` sections of `pnpm-workspace.yaml`.
 
@@ -40,8 +40,8 @@ pnpm test                     # vitest all packages
 pnpm zip                      # Chrome/Edge zip  -> packages/extension/.output/
 pnpm zip:firefox              # Firefox zip      -> packages/extension/.output/
 
-# Docs
-pnpm docs:dev                 # Preview the docs/install site
+# Landing page (site/) — plain static HTML/CSS, deployed to GitHub Pages.
+# Preview locally with any static server, e.g.: python3 -m http.server -d site
 
 # Versioning & changelog
 pnpm changeset                # Create a changeset for your PR
@@ -106,7 +106,7 @@ Key patterns:
 
 ## Changesets & Publishing
 
-Versioning is managed with [@changesets/cli](https://github.com/changesets/changesets). The extension is **not published to npm** — tagged versions ship as **GitHub Release** artifacts (Chrome + Firefox zips), and the docs install page links to the latest release.
+Versioning is managed with [@changesets/cli](https://github.com/changesets/changesets). The extension is **not published to npm** — tagged versions ship as **GitHub Release** artifacts (Chrome zip + Mozilla-signed Firefox `.xpi`), and the landing page (`site/`, on GitHub Pages) links to the latest release.
 
 **When making changes to `packages/extension/`, on the feature branch before opening the PR:**
 

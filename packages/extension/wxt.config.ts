@@ -79,8 +79,19 @@ export default defineConfig({
         // Firefox requires a stable add-on ID to sign + self-distribute (and for
         // updates to map to the same add-on). Chrome ignores this key, so only
         // emit it for the Firefox build to keep the Chrome manifest clean.
+        // `update_url` powers self-distribution auto-update: Firefox polls this
+        // JSON (attached to each GitHub Release; latest/download resolves to the
+        // newest one) and installs newer signed .xpi builds automatically.
         ...(browser === 'firefox'
-            ? { browser_specific_settings: { gecko: { id: 'ado-companion@mjuma.github.io' } } }
+            ? {
+                  browser_specific_settings: {
+                      gecko: {
+                          id: 'ado-companion@mjuma.github.io',
+                          update_url:
+                              'https://github.com/MJuma/ado-companion/releases/latest/download/updates.json',
+                      },
+                  },
+              }
             : {}),
     }),
 });

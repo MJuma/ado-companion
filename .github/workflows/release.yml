@@ -87,6 +87,15 @@ jobs:
           if [[ -n "$XPI" ]]; then
             cp "$XPI" "${OUT}/ado-companion-firefox.xpi"
             echo "✅ Signed add-on: ${OUT}/ado-companion-firefox.xpi"
+            # Self-distribution update manifest for Firefox auto-update. `update_url`
+            # in the manifest points at the latest release's copy of this file.
+            V="${{ steps.version.outputs.version }}"
+            HASH="sha256:$(sha256sum "${OUT}/ado-companion-firefox.xpi" | cut -d' ' -f1)"
+            LINK="https://github.com/MJuma/ado-companion/releases/download/v${V}/ado-companion-firefox.xpi"
+            jq -n --arg v "$V" --arg link "$LINK" --arg hash "$HASH" \
+              '{addons:{"ado-companion@mjuma.github.io":{updates:[{version:$v,update_link:$link,update_hash:$hash}]}}}' \
+              > "${OUT}/updates.json"
+            echo "✅ updates.json:" && cat "${OUT}/updates.json"
           else
             echo "::warning::web-ext sign produced no .xpi — falling back to the unsigned zip."
           fi
@@ -118,6 +127,9 @@ jobs:
           ASSETS=("${OUT}/ado-companion-chrome.zip")
           if [[ -f "${OUT}/ado-companion-firefox.xpi" ]]; then
             ASSETS+=("${OUT}/ado-companion-firefox.xpi")
+            # The Firefox auto-update manifest (must be a release asset so
+            # latest/download/updates.json resolves to it).
+            [[ -f "${OUT}/updates.json" ]] && ASSETS+=("${OUT}/updates.json")
           else
             ASSETS+=("${OUT}/ado-companion-firefox.zip")
           fi

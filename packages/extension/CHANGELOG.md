@@ -1,5 +1,13 @@
 # ado-companion-extension
 
+## 0.6.3
+
+### Patch Changes
+
+- Enable Firefox auto-update.
+
+  The Firefox build now declares an update URL (`browser_specific_settings.gecko.update_url`), and each release publishes an `updates.json` manifest, so installed Firefox copies update themselves to new Mozilla-signed `.xpi` builds. Auto-update applies from this version onward; an existing install needs one manual update to pick it up.
+
 ## 0.6.2
 
 ### Patch Changes
