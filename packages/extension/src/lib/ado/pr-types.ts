@@ -27,6 +27,8 @@ export interface IdentityRef {
     displayName: string;
     uniqueName: string;
     imageUrl: string;
+    /** Identity descriptor; prefix encodes account type (aad./msa. user, svc./s2s. service). */
+    descriptor?: string;
 }
 
 export interface FilePosition {

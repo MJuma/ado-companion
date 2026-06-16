@@ -1,6 +1,7 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
 import { createReviewEnhancer } from '../app/review/review-enhancer';
+import { createTimelineEnhancer } from '../app/timeline/timeline-enhancer';
 import { findStale, planReconcile } from '../lib/enhancers/reconcile';
 import type { SurfaceEnhancer } from '../lib/enhancers/types';
 import { DEFAULT_SETTINGS, isUrlAllowed } from '../lib/settings/allowlist';
@@ -15,7 +16,7 @@ interface ActiveMount {
 export default defineContentScript({
     matches: ['https://dev.azure.com/*', 'https://*.visualstudio.com/*'],
     main() {
-        const enhancers: SurfaceEnhancer[] = [createReviewEnhancer()];
+        const enhancers: SurfaceEnhancer[] = [createReviewEnhancer(), createTimelineEnhancer()];
         const active = new Map<string, ActiveMount>();
         let timer: ReturnType<typeof setTimeout> | undefined;
         let running = false;

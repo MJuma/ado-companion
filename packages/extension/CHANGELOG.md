@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.5.0
+
+### Minor Changes
+
+- Add filter tabs to the PR Overview timeline. A native-styled tab strip — All, Actions, Commits, Comments, System Messages — is injected on the same row as ADO's "Show everything" dropdown and filters the activity feed in place. Comments are split by author: human comments under "Comments", and service/bot comments (build service, pipelines, GitOps, etc.) under "System Messages"; pushed commits under "Commits"; and votes, reviewers, policy and lifecycle events under "Actions". Each tab shows a live count.
+
 ## 0.4.3
 
 ### Patch Changes

@@ -80,10 +80,22 @@ export function parsePrContext(rawUrl: string): PrContext | null {
     return { ...match, filePath };
 }
 
-export function getRepoApiBaseUrl(ctx: PrContext): string {
+/** A pull request reference without a specific file (e.g. the PR Overview page). */
+export type PrRef = Omit<PrContext, 'filePath'>;
+
+/**
+ * Parse any pull request URL into its org/project/repo/PR-id, regardless of
+ * which PR tab (Overview, Files, Commits…) or file is open. Use for PR-level
+ * features; use `parsePrContext` when a `.md` file path is required.
+ */
+export function parsePrRef(rawUrl: string): PrRef | null {
+    return matchPrUrl(rawUrl);
+}
+
+export function getRepoApiBaseUrl(ctx: PrRef): string {
     return `${ctx.organizationUrl}/${ctx.project}/_apis/git/repositories/${ctx.repositoryId}`;
 }
 
-export function getPrApiBaseUrl(ctx: PrContext): string {
+export function getPrApiBaseUrl(ctx: PrRef): string {
     return `${getRepoApiBaseUrl(ctx)}/pullRequests/${ctx.pullRequestId}`;
 }
