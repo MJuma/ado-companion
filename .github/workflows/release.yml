@@ -70,8 +70,18 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: |
           OUT=packages/extension/.output
+          # Trim stray whitespace/newlines from the secrets (a common cause of
+          # AMO's "Error decoding signature" auth failure), and sanity-check the
+          # issuer shape without printing the values.
+          export WEB_EXT_API_KEY="$(printf '%s' "${WEB_EXT_API_KEY}" | tr -d '[:space:]')"
+          export WEB_EXT_API_SECRET="$(printf '%s' "${WEB_EXT_API_SECRET}" | tr -d '[:space:]')"
+          echo "AMO issuer length: ${#WEB_EXT_API_KEY}, secret length: ${#WEB_EXT_API_SECRET}"
+          case "${WEB_EXT_API_KEY}" in
+            user:*) ;;
+            *) echo "::warning::AMO_JWT_ISSUER should look like 'user:NNNNN:NN' — it may be wrong or swapped with the secret." ;;
+          esac
           # Signs the built Firefox add-on via Mozilla AMO (unlisted) and writes
-          # the signed .xpi into .output/. Requires the AMO_* repo secrets.
+          # the signed .xpi into .output/.
           pnpm --filter ado-companion-extension run sign:firefox
           XPI=$(ls "${OUT}"/*.xpi 2>/dev/null | head -1)
           if [[ -n "$XPI" ]]; then
