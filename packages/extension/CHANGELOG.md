@@ -1,5 +1,11 @@
 # ado-companion-extension
 
+## 0.4.3
+
+### Patch Changes
+
+- Expand comments created in the Review view in place when switching to a native ADO file view, instead of re-fetching the whole file. The extension now clicks ADO's own expand toggle for the comment as soon as it renders, which is much faster on large/comment-heavy PRs (where the previous re-fetch left the comment collapsed for a long time) and avoids re-rendering the file. The comment still appears in the file-tree comment list.
+
 ## 0.4.2
 
 ### Patch Changes

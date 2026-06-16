@@ -15,20 +15,14 @@ const VIEW_MAIN_SELECTOR = '.repos-compare-toolbar .bolt-split-button-main';
 const REVIEW_ITEM_ID = 'ado-companion-review-item';
 const HOST_CLASS = 'ado-companion-review-host';
 const HOST_STYLE_ID = 'ado-companion-host-style';
-const SELECTED_FILE_ROW_SELECTOR = '.bolt-tree-row.selected';
-// Native inline/diff discussion widgets — counting these lets us wait until the
-// editor has finished rendering ALL threads (count stops changing) before the
-// re-fetch, so a comment-heavy file doesn't trip an early re-select.
-const NATIVE_DISCUSSION_SELECTOR = '.repos-discussion-thread, .repos-editor-discussion-expand';
-
-// Poll for the native editor to finish rendering its discussions before forcing
-// the re-fetch, instead of guessing a fixed delay (slower/bigger PRs mount
-// later, comment-heavy files render in waves).
-const NATIVE_REFRESH_POLL_MS = 150;
-const NATIVE_REFRESH_MAX_POLLS = 80;
-// Consider the editor "settled" once the discussion count holds steady this many
-// consecutive polls.
-const NATIVE_REFRESH_STABLE_TICKS = 4;
+// ADO's collapsed-thread expand toggle in the native inline/diff editor; its
+// aria-label is `<author>: "<comment text truncated>…"`.
+const NATIVE_COLLAPSED_SELECTOR = '.repos-editor-discussion-expand';
+// Poll for the native editor to render our (collapsed) thread, then expand it.
+const NATIVE_EXPAND_POLL_MS = 150;
+const NATIVE_EXPAND_MAX_POLLS = 80;
+// Chars of the comment text used to match it in the collapsed toggle's aria-label.
+const COMMENT_SNIPPET_LEN = 24;
 
 // Hide ADO's native file content while Review overlays it, using visibility
 // (NOT display) so ADO keeps laying it out — display:none broke ADO's rendering
@@ -53,50 +47,51 @@ const KEY_EVENTS = ['keydown', 'keyup', 'keypress', 'input', 'paste'] as const;
 // you browse files. Cleared only when the user picks another view.
 let stickyPrId: number | null = null;
 
-// Set when the user creates a thread inside Review. ADO's native file views
-// render externally-created threads collapsed (and omit them from the file
-// tree) until a fresh discussion fetch — re-selecting the open file forces that
-// fetch. We defer it until the user leaves Review for a native view so Review
-// itself isn't torn down mid-session.
-let pendingNativeRefresh = false;
+// Comment text of threads created inside Review this session. ADO's native file
+// views render externally-created threads collapsed; we expand them in place
+// when the user leaves Review for a native view (see expandCreatedComments).
+let pendingComments: string[] = [];
 
 function isElement(node: EventTarget): node is HTMLElement {
     return node instanceof HTMLElement;
 }
 
+/** First chars of a comment, matched against ADO's collapsed-toggle aria-label. */
+function commentSnippet(content: string): string {
+    return content.trim().replace(/\s+/g, ' ').slice(0, COMMENT_SNIPPET_LEN);
+}
+
 /**
- * Force ADO to re-fetch the open file's discussions so threads created in
- * Review render expanded (and appear in the file tree) in the native view the
- * user just switched to. Re-selecting the already-open file in ADO's tree is
- * what triggers a fresh fetch — but it must happen AFTER the native editor has
- * mounted and rendered its (collapsed) discussion widgets, otherwise the
- * re-fetch only updates the file tree and the editor still shows collapsed. So
- * poll for the native discussion widgets (capped) before re-selecting.
+ * Expand the threads we just created in ADO's native file view. ADO renders
+ * externally-created (REST) threads collapsed there; rather than re-fetching the
+ * whole file (slow + a visible reload that flashes the comment collapsed), click
+ * each thread's own expand toggle in place once the editor has rendered it.
+ * Threads are matched by the comment snippet ADO puts in the toggle's aria-label.
  */
-function refreshNativeDiscussions(): void {
+function expandCreatedComments(): void {
+    const remaining = new Set(pendingComments.map(commentSnippet).filter((s) => s.length > 0));
+    pendingComments = [];
+    if (remaining.size === 0) {
+        return;
+    }
     let attempts = 0;
-    let lastCount = -1;
-    let stableTicks = 0;
-    const tryRefresh = (): void => {
+    const tick = (): void => {
         attempts += 1;
-        const row = document.querySelector<HTMLElement>(SELECTED_FILE_ROW_SELECTOR);
-        const count = document.querySelectorAll(NATIVE_DISCUSSION_SELECTOR).length;
-        if (count > 0 && count === lastCount) {
-            stableTicks += 1;
-        } else {
-            stableTicks = 0;
+        for (const toggle of document.querySelectorAll<HTMLElement>(NATIVE_COLLAPSED_SELECTOR)) {
+            const label = toggle.getAttribute('aria-label') ?? '';
+            for (const snippet of remaining) {
+                if (label.includes(snippet)) {
+                    toggle.click();
+                    remaining.delete(snippet);
+                    break;
+                }
+            }
         }
-        lastCount = count;
-        const settled = count > 0 && stableTicks >= NATIVE_REFRESH_STABLE_TICKS;
-        if (row && (settled || attempts >= NATIVE_REFRESH_MAX_POLLS)) {
-            row.click();
-            return;
-        }
-        if (attempts < NATIVE_REFRESH_MAX_POLLS) {
-            window.setTimeout(tryRefresh, NATIVE_REFRESH_POLL_MS);
+        if (remaining.size > 0 && attempts < NATIVE_EXPAND_MAX_POLLS) {
+            window.setTimeout(tick, NATIVE_EXPAND_POLL_MS);
         }
     };
-    window.setTimeout(tryRefresh, NATIVE_REFRESH_POLL_MS);
+    window.setTimeout(tick, NATIVE_EXPAND_POLL_MS);
 }
 
 /** Close ADO's open view menu the way it expects (Escape on the menu). */
@@ -231,8 +226,8 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                     () => (
                         <ReviewView
                             context={context}
-                            onThreadCreated={() => {
-                                pendingNativeRefresh = true;
+                            onThreadCreated={(content) => {
+                                pendingComments.push(content);
                             }}
                         />
                     ),
@@ -313,10 +308,7 @@ export function createReviewEnhancer(): SurfaceEnhancer {
                 );
                 if (inNativeMenuItem || inMainButton) {
                     deactivate(true);
-                    if (pendingNativeRefresh) {
-                        pendingNativeRefresh = false;
-                        refreshNativeDiscussions();
-                    }
+                    expandCreatedComments();
                 }
             }
 

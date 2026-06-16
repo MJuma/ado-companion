@@ -48,8 +48,8 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 interface ReviewViewProps {
     context: PrContext;
-    /** Called after a new thread is successfully created (for native refresh). */
-    onThreadCreated?: () => void;
+    /** Called with the comment text after a new thread is successfully created. */
+    onThreadCreated?: (content: string) => void;
 }
 
 interface SelectionAnchor {
@@ -615,7 +615,7 @@ export function ReviewView(props: ReviewViewProps) {
             prBaseUrl(),
             buildNewThreadInput(props.context.filePath, content, { ...target, sourceLine }),
         );
-        props.onThreadCreated?.();
+        props.onThreadCreated?.(content);
         closeComposer();
         void refetchThreads();
     }
