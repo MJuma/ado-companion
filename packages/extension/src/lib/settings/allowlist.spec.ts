@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_SETTINGS, isUrlAllowed } from './allowlist';
+import { isUrlAllowed } from './allowlist';
+import { DEFAULT_SETTINGS } from './model';
 
 const url = 'https://dev.azure.com/powerbi/Power%20BI/_git/repo/pullrequest/1';
 

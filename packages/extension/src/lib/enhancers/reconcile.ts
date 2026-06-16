@@ -10,18 +10,21 @@ export interface ReconcilePlan {
 /**
  * Decide which enhancers to mount/unmount for the current URL, given the
  * currently-active keys and whether each anchor is present. Pure — the host
- * executes the plan (running cleanups / awaiting mounts).
+ * executes the plan (running cleanups / awaiting mounts). An enhancer whose
+ * feature is disabled (`isEnabled` returns false) is treated as inactive, so a
+ * currently-mounted one is torn down.
  */
 export function planReconcile(
     enhancers: readonly SurfaceEnhancer[],
     activeKeys: ReadonlyMap<string, string>,
     url: string,
     hasAnchor: (selector: string) => boolean,
+    isEnabled: (enhancer: SurfaceEnhancer) => boolean = () => true,
 ): ReconcilePlan {
     const plan: ReconcilePlan = { unmount: [], mount: [] };
 
     for (const enhancer of enhancers) {
-        const key = enhancer.matches(url);
+        const key = isEnabled(enhancer) ? enhancer.matches(url) : null;
         const activeKey = activeKeys.get(enhancer.id) ?? null;
 
         if (key === null) {

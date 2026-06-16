@@ -1,5 +1,15 @@
 # ado-companion-extension
 
+## 0.6.0
+
+### Minor Changes
+
+- Add a PR Pipelines tab and per-feature settings toggles.
+
+  A new native-styled **"Pipelines"** tab beside Overview on a pull request shows the PR build's stage and job status — each stage lists its jobs as colored status circles (succeeded, failed, running, pending, skipped, canceled, warning) — resolved from the PR's required Build policy and the build timeline, without leaving the PR. Selecting the tab swaps the page content in place; selecting any native tab restores it.
+
+  Settings now have a master switch plus an individual enable/disable toggle for each feature — PR Markdown Review, PR Activity Filter, and the PR Pipelines tab. The Pipelines feature also adds a configurable list of pull request tab labels to hide from the tab strip (e.g. tabs you never use), so you can declutter the PR header. "Overview" is never hidden. Existing settings are preserved and every feature defaults to on.
+
 ## 0.5.0
 
 ### Minor Changes

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_SETTINGS } from './allowlist';
-import type { ReviewSettings } from './allowlist';
+import { DEFAULT_SETTINGS } from './model';
+import type { CompanionSettings } from './model';
 import { loadSettings, saveSettings, watchSettings } from './settings';
 
 describe('settings storage', () => {
@@ -10,18 +10,26 @@ describe('settings storage', () => {
     });
 
     it('persists saved settings', async () => {
-        await saveSettings({ enabled: false, allowlist: ['powerbi'] });
-        expect(await loadSettings()).toEqual({ enabled: false, allowlist: ['powerbi'] });
+        const next: CompanionSettings = {
+            ...DEFAULT_SETTINGS,
+            enabled: false,
+            allowlist: ['powerbi'],
+            features: { review: false, timeline: true, pipelines: true },
+            hiddenPrTabs: ['Synapse diff'],
+        };
+        await saveSettings(next);
+        expect(await loadSettings()).toEqual(next);
     });
 
     it('notifies watchers on change', async () => {
-        const fired = new Promise<ReviewSettings>((resolve) => {
+        const next: CompanionSettings = { ...DEFAULT_SETTINGS, enabled: false, allowlist: ['x'] };
+        const fired = new Promise<CompanionSettings>((resolve) => {
             const unwatch = watchSettings((settings) => {
                 unwatch();
                 resolve(settings);
             });
         });
-        await saveSettings({ enabled: false, allowlist: ['x'] });
-        expect(await fired).toEqual({ enabled: false, allowlist: ['x'] });
+        await saveSettings(next);
+        expect(await fired).toEqual(next);
     });
 });

@@ -10,6 +10,7 @@ function enhancer(
 ): SurfaceEnhancer {
     return {
         id,
+        feature: 'review',
         anchor,
         matches: () => matchKey,
         mount: (): MountResult => ({ cleanup: () => {}, marker: {} as Node }),
@@ -84,6 +85,44 @@ describe('planReconcile', () => {
     it('leaves an inactive, unmatched enhancer alone', () => {
         const plan = planReconcile([enhancer('a', null)], new Map(), 'url', anchorsPresent);
         expect(plan).toEqual({ unmount: [], mount: [] });
+    });
+
+    it('does not mount an enhancer whose feature is disabled', () => {
+        const plan = planReconcile(
+            [enhancer('a', 'k1')],
+            new Map(),
+            'url',
+            anchorsPresent,
+            () => false,
+        );
+
+        expect(plan).toEqual({ unmount: [], mount: [] });
+    });
+
+    it('unmounts an active enhancer when its feature becomes disabled', () => {
+        const plan = planReconcile(
+            [enhancer('a', 'k1')],
+            new Map([['a', 'k1']]),
+            'url',
+            anchorsPresent,
+            () => false,
+        );
+
+        expect(plan.unmount).toEqual(['a']);
+        expect(plan.mount).toEqual([]);
+    });
+
+    it('only gates the disabled enhancer, leaving enabled ones active', () => {
+        const plan = planReconcile(
+            [enhancer('a', 'k1'), enhancer('b', 'k2')],
+            new Map(),
+            'url',
+            anchorsPresent,
+            (e) => e.id === 'b',
+        );
+
+        expect(plan.mount).toEqual([{ id: 'b', key: 'k2' }]);
+        expect(plan.unmount).toEqual([]);
     });
 });
 

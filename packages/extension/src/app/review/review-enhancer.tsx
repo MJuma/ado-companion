@@ -111,6 +111,7 @@ function closeViewMenu(): void {
 export function createReviewEnhancer(): SurfaceEnhancer {
     return {
         id: 'review',
+        feature: 'review',
         anchor: TOOLBAR_SELECTOR,
         matches(url: string): string | null {
             const context = parsePrContext(url);

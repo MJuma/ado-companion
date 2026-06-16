@@ -58,6 +58,7 @@ function isComposerRow(row: HTMLElement): boolean {
 export function createTimelineEnhancer(): SurfaceEnhancer {
     return {
         id: 'timeline-filter',
+        feature: 'timeline',
         anchor: ANCHOR_SELECTOR,
         matches(url: string): string | null {
             const ref = parsePrRef(url);

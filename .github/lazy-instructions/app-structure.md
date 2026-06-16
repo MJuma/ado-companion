@@ -26,19 +26,25 @@ packages/extension/
     │   │   ├── CommentCard/CommentItem/CommentComposer.tsx, Icons.tsx, status.ts
     │   │   ├── mermaid.ts, syntax.ts # lazy-loaded vendored mermaid + highlighter (themed, sanitized)
     │   │   └── review-styles.ts      # Shadow-DOM CSS (uses ADO theme vars)
-    │   └── timeline/           # PR Timeline Filter feature UI:
-    │       ├── timeline-enhancer.tsx # SurfaceEnhancer: injects filter tabs on the Overview feed
-    │       ├── TimelineFilterTabs.tsx# Solid tab strip (All/Actions/Commits/Comments/System)
-    │       └── timeline-styles.ts    # Shadow-DOM CSS (ADO pivot-style tabs)
+    │   ├── timeline/           # PR Timeline Filter feature UI:
+    │   │   ├── timeline-enhancer.tsx # SurfaceEnhancer: injects filter tabs on the Overview feed
+    │   │   ├── TimelineFilterTabs.tsx# Solid tab strip (All/Actions/Commits/Comments/System)
+    │   │   └── timeline-styles.ts    # Shadow-DOM CSS (ADO pivot-style tabs)
+    │   └── pipelines/          # PR Pipelines Tab feature UI:
+    │       ├── pipelines-enhancer.tsx    # SurfaceEnhancer: injects "Pipelines" tab + content swap
+    │       ├── pr-tab-filter-enhancer.tsx# SurfaceEnhancer: hides PR tabs by label (hiddenPrTabs)
+    │       ├── PipelinesView.tsx, StatusDot.tsx
+    │       └── pipelines-styles.ts       # Shadow-DOM CSS (stage/job status circles)
     ├── lib/                    # pure, framework-free logic (tested; coverage enforced)
     │   ├── ado/                # ADO PR REST + data layer (pr, http, threads, iterations,
-    │   │                        #   items, attachments, identities, pr-types)
+    │   │                        #   items, attachments, identities, pr-types, pipelines)
     │   ├── markdown/           # markdown-it source-line render + DOMPurify + links + images +
     │   │                        #   anchoring + highlight (phrase→source range) + directives
     │   ├── enhancers/          # surface-enhancer framework (reconcile, types)
     │   ├── review/             # composer editor helpers + @mention logic + theme + time
     │   ├── timeline/           # classify.ts: row categorization + bot/human-by-timestamp map
-    │   └── settings/           # ReviewSettings + isUrlAllowed (allowlist) + storage load/save/watch
+    │   ├── pipelines/          # timeline.ts (stage/job parser) + tab-filter.ts (hide matcher)
+    │   └── settings/           # CompanionSettings model + featureEnabled + isUrlAllowed + storage
     ├── fluent.d.ts             # Solid JSX typings for Fluent custom elements
     ├── css.d.ts                # ambient declaration for side-effect CSS imports
     └── test-setup.ts           # suppresses console, resets fakeBrowser
@@ -48,24 +54,28 @@ packages/extension/
 
 `src/entrypoints/content.tsx` is a generic **host**, not feature-specific:
 
-1. Holds a list of `SurfaceEnhancer`s (currently `createReviewEnhancer()` and
-   `createTimelineEnhancer()`).
-2. Loads `ReviewSettings` and `watch`es for changes; a debounced `MutationObserver`
+1. Holds a list of `SurfaceEnhancer`s (`createReviewEnhancer()`,
+   `createTimelineEnhancer()`, `createPipelinesEnhancer()`,
+   `createPrTabFilterEnhancer()`).
+2. Loads `CompanionSettings` and `watch`es for changes; a debounced `MutationObserver`
    on `<body>` drives a reconcile `tick()` (ADO is an SPA that re-renders constantly).
 3. Each tick: drop enhancers whose mount node ADO removed (`findStale`); if the URL
    isn't allowed (`isUrlAllowed` — disabled or an allowlist miss) unmount everything
-   and stop; otherwise `planReconcile` decides what to mount/unmount for the URL.
+   and stop; otherwise `planReconcile` decides what to mount/unmount for the URL,
+   gated per enhancer by `featureEnabled(settings, enhancer.feature)`.
 4. To mount, the host finds the enhancer's `anchor` element and calls
    `mount(key, anchor)`, which returns `{ marker, cleanup }`.
 
-A `SurfaceEnhancer` (`src/lib/enhancers/types.ts`) declares `id`, `anchor` (CSS
-selector), `matches(url)` — which returns a stable **key** when the enhancer
-should be active (else `null`; a changed key forces unmount + re-mount) — and
-`mount(key, anchor)` returning `{ marker, cleanup }`. The Review enhancer injects
-the "Review" pivot into ADO's view-switcher and mounts a Shadow-DOM island
-rendering `<ReviewView>`; the Timeline enhancer injects tabs at
-`.repos-activity-filter-dropdown` and hides feed rows by category. Apply the
-Fluent theme to the island container, then `render(() => <Component />, container)`.
+A `SurfaceEnhancer` (`src/lib/enhancers/types.ts`) declares `id`, `feature` (the
+settings toggle that gates it), `anchor` (CSS selector), `matches(url)` — which
+returns a stable **key** when the enhancer should be active (else `null`; a changed
+key forces unmount + re-mount) — and `mount(key, anchor)` returning
+`{ marker, cleanup }`. The Review enhancer injects the "Review" pivot into ADO's
+view-switcher and mounts a Shadow-DOM island rendering `<ReviewView>`; the Timeline
+enhancer injects tabs at `.repos-activity-filter-dropdown` and hides feed rows by
+category; the Pipelines enhancer injects a "Pipelines" tab into `.bolt-tabbar-tabs`
+and swaps `.page-content`. Apply the Fluent theme to the island container, then
+`render(() => <Component />, container)`.
 
 Keep host/injection glue thin; put matching/data/anchoring logic in `src/lib/` so it is unit-tested.
 

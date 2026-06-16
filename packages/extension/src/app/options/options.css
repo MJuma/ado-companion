@@ -67,6 +67,24 @@ body {
     margin: 0 0 6px;
 }
 
+.opt__h3 {
+    font-size: 1em;
+    margin: 0 0 6px;
+}
+
+.opt__features {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.opt__nested {
+    margin-top: 18px;
+    padding: 16px 0 0;
+    border-top: 1px dashed var(--opt-border);
+}
+
 .opt__muted {
     color: var(--opt-muted);
     font-size: 0.9em;

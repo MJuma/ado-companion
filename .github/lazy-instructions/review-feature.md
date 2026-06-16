@@ -2,8 +2,9 @@
 
 A native **"Review"** view for Azure DevOps PR `.md` files — rendered markdown
 with a Word-style comment rail, synced to native ADO PR threads. **Shipped and
-matured** (the extension's flagship feature; the second is the PR Timeline Filter,
-see @lazy-instructions/timeline-feature.md). The phase list below is build history;
+matured** (the extension's flagship feature; siblings are the PR Timeline Filter and
+PR Pipelines Tab — see @lazy-instructions/timeline-feature.md and
+@lazy-instructions/pipelines-feature.md). The phase list below is build history;
 **Recent additions & fixes** captures what shipped most recently.
 
 ## Status

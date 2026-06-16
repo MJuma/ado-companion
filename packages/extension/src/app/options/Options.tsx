@@ -1,48 +1,66 @@
 import { createSignal, For, onMount, Show } from 'solid-js';
 
-import { DEFAULT_SETTINGS } from '../../lib/settings/allowlist';
+import { DEFAULT_SETTINGS, FEATURES } from '../../lib/settings/model';
+import type { CompanionSettings, FeatureId } from '../../lib/settings/model';
 import { loadSettings, saveSettings } from '../../lib/settings/settings';
 
 import './options.css';
 
 export function Options() {
-    const [enabled, setEnabled] = createSignal(DEFAULT_SETTINGS.enabled);
-    const [allowlist, setAllowlist] = createSignal(DEFAULT_SETTINGS.allowlist);
-    const [draft, setDraft] = createSignal('');
+    const [settings, setSettings] = createSignal(DEFAULT_SETTINGS);
+    const [allowDraft, setAllowDraft] = createSignal('');
+    const [tabDraft, setTabDraft] = createSignal('');
     const [loaded, setLoaded] = createSignal(false);
     const [saved, setSaved] = createSignal(false);
 
     onMount(async () => {
-        const settings = await loadSettings();
-        setEnabled(settings.enabled);
-        setAllowlist(settings.allowlist);
+        setSettings(await loadSettings());
         setLoaded(true);
     });
 
-    async function commit(): Promise<void> {
-        await saveSettings({ enabled: enabled(), allowlist: allowlist() });
+    const enabled = (): boolean => settings().enabled;
+    const allowlist = (): string[] => settings().allowlist;
+    const hiddenPrTabs = (): string[] => settings().hiddenPrTabs;
+    const pipelinesOn = (): boolean => settings().features.pipelines;
+
+    async function update(patch: Partial<CompanionSettings>): Promise<void> {
+        const next: CompanionSettings = { ...settings(), ...patch };
+        setSettings(next);
+        await saveSettings(next);
         setSaved(true);
     }
 
-    function toggleEnabled(value: boolean): void {
-        setEnabled(value);
-        void commit();
+    function setFeature(id: FeatureId, value: boolean): void {
+        void update({ features: { ...settings().features, [id]: value } });
     }
 
-    function addEntry(): void {
-        const entry = draft().trim();
+    function addAllow(): void {
+        const entry = allowDraft().trim();
         if (entry.length === 0 || allowlist().includes(entry)) {
-            setDraft('');
+            setAllowDraft('');
             return;
         }
-        setAllowlist([...allowlist(), entry]);
-        setDraft('');
-        void commit();
+        void update({ allowlist: [...allowlist(), entry] });
+        setAllowDraft('');
     }
 
-    function removeEntry(entry: string): void {
-        setAllowlist(allowlist().filter((item) => item !== entry));
-        void commit();
+    function removeAllow(entry: string): void {
+        void update({ allowlist: allowlist().filter((item) => item !== entry) });
+    }
+
+    function addTab(): void {
+        const entry = tabDraft().trim();
+        const exists = hiddenPrTabs().some((tab) => tab.toLowerCase() === entry.toLowerCase());
+        if (entry.length === 0 || exists) {
+            setTabDraft('');
+            return;
+        }
+        void update({ hiddenPrTabs: [...hiddenPrTabs(), entry] });
+        setTabDraft('');
+    }
+
+    function removeTab(entry: string): void {
+        void update({ hiddenPrTabs: hiddenPrTabs().filter((item) => item !== entry) });
     }
 
     return (
@@ -59,17 +77,107 @@ export function Options() {
                             type="checkbox"
                             checked={enabled()}
                             on:change={(event) => {
-                                toggleEnabled((event.currentTarget as HTMLInputElement).checked);
+                                void update({
+                                    enabled: (event.currentTarget as HTMLInputElement).checked,
+                                });
                             }}
                         />
                         <span>
                             <strong>Enable ADO Companion</strong>
                             <span class="opt__muted">
-                                Adds the Review experience to Azure DevOps pull request Markdown
-                                files.
+                                Master switch for every enhancement below.
                             </span>
                         </span>
                     </label>
+                </section>
+
+                <section class="opt__section" classList={{ 'opt__section--disabled': !enabled() }}>
+                    <h2 class="opt__h2">Features</h2>
+                    <p class="opt__muted">Turn individual enhancements on or off.</p>
+                    <div class="opt__features">
+                        <For each={FEATURES}>
+                            {(feature) => (
+                                <label class="opt__toggle">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings().features[feature.id]}
+                                        disabled={!enabled()}
+                                        on:change={(event) => {
+                                            setFeature(
+                                                feature.id,
+                                                (event.currentTarget as HTMLInputElement).checked,
+                                            );
+                                        }}
+                                    />
+                                    <span>
+                                        <strong>{feature.label}</strong>
+                                        <span class="opt__muted">{feature.description}</span>
+                                    </span>
+                                </label>
+                            )}
+                        </For>
+                    </div>
+
+                    <Show when={pipelinesOn()}>
+                        <div class="opt__nested">
+                            <h3 class="opt__h3">Hidden pull request tabs</h3>
+                            <p class="opt__muted">
+                                Hide tabs beside <code>Overview</code> on the PR page whose label
+                                matches an entry below (case-insensitive). <code>Overview</code> is
+                                never hidden.
+                            </p>
+                            <div class="opt__add">
+                                <input
+                                    class="opt__input"
+                                    type="text"
+                                    placeholder="tab label, e.g. Synapse diff"
+                                    value={tabDraft()}
+                                    disabled={!enabled()}
+                                    on:input={(event) => {
+                                        setTabDraft((event.currentTarget as HTMLInputElement).value);
+                                    }}
+                                    on:keydown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addTab();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    class="opt__btn"
+                                    type="button"
+                                    disabled={!enabled() || tabDraft().trim().length === 0}
+                                    on:click={addTab}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                            <Show
+                                when={hiddenPrTabs().length > 0}
+                                fallback={
+                                    <p class="opt__muted opt__empty">No tabs hidden.</p>
+                                }
+                            >
+                                <ul class="opt__list">
+                                    <For each={hiddenPrTabs()}>
+                                        {(entry) => (
+                                            <li class="opt__item">
+                                                <span>{entry}</span>
+                                                <button
+                                                    class="opt__remove"
+                                                    type="button"
+                                                    disabled={!enabled()}
+                                                    on:click={() => removeTab(entry)}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </li>
+                                        )}
+                                    </For>
+                                </ul>
+                            </Show>
+                        </div>
+                    </Show>
                 </section>
 
                 <section class="opt__section" classList={{ 'opt__section--disabled': !enabled() }}>
@@ -84,23 +192,23 @@ export function Options() {
                             class="opt__input"
                             type="text"
                             placeholder="org name or host…"
-                            value={draft()}
+                            value={allowDraft()}
                             disabled={!enabled()}
                             on:input={(event) => {
-                                setDraft((event.currentTarget as HTMLInputElement).value);
+                                setAllowDraft((event.currentTarget as HTMLInputElement).value);
                             }}
                             on:keydown={(event) => {
                                 if (event.key === 'Enter') {
                                     event.preventDefault();
-                                    addEntry();
+                                    addAllow();
                                 }
                             }}
                         />
                         <button
                             class="opt__btn"
                             type="button"
-                            disabled={!enabled() || draft().trim().length === 0}
-                            on:click={addEntry}
+                            disabled={!enabled() || allowDraft().trim().length === 0}
+                            on:click={addAllow}
                         >
                             Add
                         </button>
@@ -122,7 +230,7 @@ export function Options() {
                                             class="opt__remove"
                                             type="button"
                                             disabled={!enabled()}
-                                            on:click={() => removeEntry(entry)}
+                                            on:click={() => removeAllow(entry)}
                                         >
                                             Remove
                                         </button>

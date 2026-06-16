@@ -10,8 +10,9 @@ Each user-facing feature is a **`SurfaceEnhancer`** — a unit that injects nati
 
 1. **PR Markdown Review** (@lazy-instructions/review-feature.md) — a native **"Review"** entry in ADO's PR file view-switcher that renders a `.md` as a document with a Word-style comment rail synced to native ADO threads. Create/edit/reply/resolve comments, @mentions, image upload, text-selection commenting with precise phrase highlight, mermaid diagrams, syntax-highlighted code.
 2. **PR Timeline Filter** (@lazy-instructions/timeline-feature.md) — filter tabs (All / Actions / Commits / Comments / System Messages) on the PR **Overview** activity feed, beside ADO's "Show everything" dropdown.
+3. **PR Pipelines Tab** (@lazy-instructions/pipelines-feature.md) — a native **"Pipelines"** tab beside Overview showing the PR build's **stages → jobs** status (from the Build Timeline API); also hides PR tabs whose label you list in settings.
 
-Also: an **options page** (enable toggle + host allowlist) and a **toolbar popup**. The content host gates every enhancer on those settings.
+Each feature has its own **enable toggle** in settings (master switch + per-feature, under `features` in `CompanionSettings`). Also: an **options page** (master/feature toggles, host allowlist, hidden-tab list) and a **toolbar popup**. The content host gates every enhancer on its feature flag.
 
 ## Repository Structure
 
@@ -123,6 +124,7 @@ Load `@lazy-instructions/<file>` (→ `.github/lazy-instructions/`) only when re
 
 - `@lazy-instructions/review-feature.md` — **PR Markdown Review** feature (decisions, ADO DOM anchors, shipped state)
 - `@lazy-instructions/timeline-feature.md` — **PR Timeline Filter** feature (categorization, ADO DOM anchors, virtualization gotcha)
+- `@lazy-instructions/pipelines-feature.md` — **PR Pipelines Tab** feature (build-timeline data path, tab injection + content swap, per-feature settings, tab hiding)
 - `@lazy-instructions/wxt.md` — WXT config, import paths, MV2/MV3, `wxt prepare`, build/zip outputs
 - `@lazy-instructions/app-structure.md` — directory layout, content-script injection, where to add things
 - `@lazy-instructions/ui-components.md` — Fluent Web Components + Solid, JSX typings, `on:click`, theming

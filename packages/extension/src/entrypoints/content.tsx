@@ -1,10 +1,13 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 
 import { createReviewEnhancer } from '../app/review/review-enhancer';
+import { createPipelinesEnhancer } from '../app/pipelines/pipelines-enhancer';
+import { createPrTabFilterEnhancer } from '../app/pipelines/pr-tab-filter-enhancer';
 import { createTimelineEnhancer } from '../app/timeline/timeline-enhancer';
 import { findStale, planReconcile } from '../lib/enhancers/reconcile';
 import type { SurfaceEnhancer } from '../lib/enhancers/types';
-import { DEFAULT_SETTINGS, isUrlAllowed } from '../lib/settings/allowlist';
+import { isUrlAllowed } from '../lib/settings/allowlist';
+import { DEFAULT_SETTINGS, featureEnabled } from '../lib/settings/model';
 import { loadSettings, watchSettings } from '../lib/settings/settings';
 
 interface ActiveMount {
@@ -16,7 +19,12 @@ interface ActiveMount {
 export default defineContentScript({
     matches: ['https://dev.azure.com/*', 'https://*.visualstudio.com/*'],
     main() {
-        const enhancers: SurfaceEnhancer[] = [createReviewEnhancer(), createTimelineEnhancer()];
+        const enhancers: SurfaceEnhancer[] = [
+            createReviewEnhancer(),
+            createTimelineEnhancer(),
+            createPipelinesEnhancer(),
+            createPrTabFilterEnhancer(),
+        ];
         const active = new Map<string, ActiveMount>();
         let timer: ReturnType<typeof setTimeout> | undefined;
         let running = false;
@@ -71,6 +79,7 @@ export default defineContentScript({
                     activeKeys,
                     window.location.href,
                     (selector) => document.querySelector(selector) !== null,
+                    (enhancer) => featureEnabled(settings, enhancer.feature),
                 );
 
                 for (const id of plan.unmount) {
