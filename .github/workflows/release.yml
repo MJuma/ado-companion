@@ -107,6 +107,9 @@ jobs:
         if: steps.version.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass notes via env (not inlined into the script) so backticks/quotes
+          # in the changelog aren't interpreted by the shell.
+          NOTES: ${{ steps.changelog.outputs.notes }}
         run: |
           OUT=packages/extension/.output
           V="${{ steps.version.outputs.version }}"
@@ -120,4 +123,4 @@ jobs:
           fi
           gh release create "v${V}" "${ASSETS[@]}" \
             --title "ADO Companion v${V}" \
-            --notes "${{ steps.changelog.outputs.notes }}"
+            --notes "$NOTES"

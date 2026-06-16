@@ -1,5 +1,13 @@
 # ado-companion-extension
 
+## 0.6.2
+
+### Patch Changes
+
+- Fix the release pipeline so the signed Firefox `.xpi` is attached to the GitHub Release.
+
+  The release step inlined the changelog notes into the shell command, so notes containing backticks (e.g. `.xpi` or `about:addons`) were executed by the shell instead of used as text, and the release failed. Notes are now passed via an environment variable. This is the first release to ship the Mozilla-signed Firefox `.xpi` end-to-end.
+
 ## 0.6.1
 
 ### Patch Changes
