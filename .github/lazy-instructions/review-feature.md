@@ -1,7 +1,10 @@
 # Review Feature — PR Markdown Review
 
-The first feature: a native **"Review"** view for Azure DevOps PR `.md` files —
-rendered markdown with a Word-style comment rail, synced to native ADO PR threads.
+A native **"Review"** view for Azure DevOps PR `.md` files — rendered markdown
+with a Word-style comment rail, synced to native ADO PR threads. **Shipped and
+matured** (the extension's flagship feature; the second is the PR Timeline Filter,
+see @lazy-instructions/timeline-feature.md). The phase list below is build history;
+**Recent additions & fixes** captures what shipped most recently.
 
 ## Status
 
@@ -48,6 +51,27 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
   preview**, and has **no image button** (paste/drop still auto-uploads). The
   island stops key events propagating so ADO's search can't hijack typing.
 
+### Recent additions & fixes
+
+- **Rich doc rendering**: **mermaid diagrams** (lazy-loaded vendored bundle,
+  themed light/dark, sanitized SVG; gantt sized to full width) and **code syntax
+  highlighting** — both in `src/app/review/mermaid.ts` + `syntax.ts`. Relative/LFS
+  images and a **commented-text-span highlight** over the rendered doc.
+- **Precise phrase highlight**: a single-line comment highlights just the selected
+  phrase (not the whole row) in both Review and ADO's native views. Source columns
+  are computed by locating the rendered quote in the source line
+  (`phraseSourceRange`, `src/lib/markdown/highlight.ts`); the thread is written with
+  true char offsets + `SupportsMarkdown` (`src/lib/review/new-thread.ts`).
+- **Native-view collapse fix**: ADO renders externally-created (REST) threads
+  collapsed until a fresh fetch. On leaving Review for a native view the enhancer
+  **expands the just-created comment in place** — clicks the comment's own
+  `.repos-editor-discussion-expand` toggle, matched by the comment snippet in its
+  `aria-label` (`expandCreatedComments` in `review-enhancer.tsx`).
+- **Comment rail UX**: resizable divider; sticky non-wrapping toolbar with status +
+  by-person filters; likes; per-card collapse; prev/next comment navigation (wraps,
+  respects filters). Flash-free updates via `createStore` + `reconcile` (see
+  `[gotcha] resource-refetch-teardown` in the memory bank).
+
 ## Locked decisions
 
 - **Surface**: native **"Review" entry in ADO's view dropdown** (Side-by-side /
@@ -69,12 +93,17 @@ rendered markdown with a Word-style comment rail, synced to native ADO PR thread
 
 Full rationale: session file `markdown-review-plan.md`.
 
-## ADO DOM anchors (verified live on PR 980523, powerbi-specs)
+## ADO DOM anchors (verified live; see memory bank for full selectors)
 
-- `.repos-compare-toolbar` — per-file toolbar; inject the **Review** control here,
-  beside the Raw content/Preview `bolt-split-button` (its main button's `aria-label`
-  toggles "Raw content"↔"Preview").
-- `.repos-changes-explorer-splitter` — file content area; mount the island here.
+- `.repos-compare-toolbar` — per-file toolbar holding the Raw content/Preview
+  `.bolt-split-button`. The **Review** entry is added to that split-button's
+  **view menu** (portal `table#__bolt-changeViewerMode`) by cloning a `<tr>` row —
+  not as a separate button. Scope view-switcher queries to this toolbar (a draft PR
+  has other split-buttons, e.g. "Publish").
+- `.repos-changes-explorer-splitter` → its `.vss-Splitter--pane-flexible` (file
+  content) — mount the island as an **absolute overlay** here so the file tree
+  (`.vss-Splitter--pane-fixed`) stays and the island fills the content width. Hide
+  ADO's native content via a `visibility:hidden` class (not `display:none`).
 - `.markdown-content` — ADO's rendered preview; match its styling for a native look.
 - `.repos-pr-details-page` — PR page root.
 

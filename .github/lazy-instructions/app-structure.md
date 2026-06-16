@@ -20,17 +20,24 @@ packages/extension/
     ├── app/                    # Solid UI (DOM glue — excluded from coverage; build + manual verified)
     │   ├── Popup.tsx, popup.css
     │   ├── options/            # Options.tsx + options.css
-    │   └── review/             # Review feature UI:
-    │       ├── review-enhancer.tsx   # SurfaceEnhancer: injects "Review" pivot + mounts island
-    │       ├── ReviewView.tsx        # two-pane rendered doc + comment rail
-    │       ├── CommentCard/CommentItem/CommentComposer.tsx
-    │       └── review-styles.ts      # Shadow-DOM CSS (uses ADO theme vars)
+    │   ├── review/             # PR Markdown Review feature UI:
+    │   │   ├── review-enhancer.tsx   # SurfaceEnhancer: injects "Review" pivot + mounts island
+    │   │   ├── ReviewView.tsx        # two-pane rendered doc + comment rail
+    │   │   ├── CommentCard/CommentItem/CommentComposer.tsx, Icons.tsx, status.ts
+    │   │   ├── mermaid.ts, syntax.ts # lazy-loaded vendored mermaid + highlighter (themed, sanitized)
+    │   │   └── review-styles.ts      # Shadow-DOM CSS (uses ADO theme vars)
+    │   └── timeline/           # PR Timeline Filter feature UI:
+    │       ├── timeline-enhancer.tsx # SurfaceEnhancer: injects filter tabs on the Overview feed
+    │       ├── TimelineFilterTabs.tsx# Solid tab strip (All/Actions/Commits/Comments/System)
+    │       └── timeline-styles.ts    # Shadow-DOM CSS (ADO pivot-style tabs)
     ├── lib/                    # pure, framework-free logic (tested; coverage enforced)
     │   ├── ado/                # ADO PR REST + data layer (pr, http, threads, iterations,
     │   │                        #   items, attachments, identities, pr-types)
-    │   ├── markdown/           # markdown-it source-line render + DOMPurify + links + anchoring
+    │   ├── markdown/           # markdown-it source-line render + DOMPurify + links + images +
+    │   │                        #   anchoring + highlight (phrase→source range) + directives
     │   ├── enhancers/          # surface-enhancer framework (reconcile, types)
-    │   ├── review/             # composer editor helpers + @mention logic
+    │   ├── review/             # composer editor helpers + @mention logic + theme + time
+    │   ├── timeline/           # classify.ts: row categorization + bot/human-by-timestamp map
     │   └── settings/           # ReviewSettings + isUrlAllowed (allowlist) + storage load/save/watch
     ├── fluent.d.ts             # Solid JSX typings for Fluent custom elements
     ├── css.d.ts                # ambient declaration for side-effect CSS imports
@@ -41,7 +48,8 @@ packages/extension/
 
 `src/entrypoints/content.tsx` is a generic **host**, not feature-specific:
 
-1. Holds a list of `SurfaceEnhancer`s (currently `createReviewEnhancer()`).
+1. Holds a list of `SurfaceEnhancer`s (currently `createReviewEnhancer()` and
+   `createTimelineEnhancer()`).
 2. Loads `ReviewSettings` and `watch`es for changes; a debounced `MutationObserver`
    on `<body>` drives a reconcile `tick()` (ADO is an SPA that re-renders constantly).
 3. Each tick: drop enhancers whose mount node ADO removed (`findStale`); if the URL
@@ -51,10 +59,13 @@ packages/extension/
    `mount(key, anchor)`, which returns `{ marker, cleanup }`.
 
 A `SurfaceEnhancer` (`src/lib/enhancers/types.ts`) declares `id`, `anchor` (CSS
-selector), `matches(url)`, `key(url)` (re-mount when it changes), and `mount()`.
-The Review enhancer injects the "Review" pivot into `.repos-compare-toolbar` and
-mounts a Shadow-DOM island rendering `<ReviewView>` (apply the Fluent theme to the
-container, then `render(() => <Component />, container)`).
+selector), `matches(url)` — which returns a stable **key** when the enhancer
+should be active (else `null`; a changed key forces unmount + re-mount) — and
+`mount(key, anchor)` returning `{ marker, cleanup }`. The Review enhancer injects
+the "Review" pivot into ADO's view-switcher and mounts a Shadow-DOM island
+rendering `<ReviewView>`; the Timeline enhancer injects tabs at
+`.repos-activity-filter-dropdown` and hides feed rows by category. Apply the
+Fluent theme to the island container, then `render(() => <Component />, container)`.
 
 Keep host/injection glue thin; put matching/data/anchoring logic in `src/lib/` so it is unit-tested.
 

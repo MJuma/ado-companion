@@ -59,7 +59,12 @@ automatic light/dark — see `review-styles.ts`). For Fluent elements, see the
 ### 3. Write the enhancer factory
 
 In `src/app/<feature>/<feature>-enhancer.tsx`, export a `create<Feature>Enhancer():
-SurfaceEnhancer`. Mirror `src/app/review/review-enhancer.tsx`:
+SurfaceEnhancer`. Two shipped enhancers are reference implementations — mirror
+whichever is closer to your feature:
+- `src/app/review/review-enhancer.tsx` — full overlay island over a file pane,
+  sticky "review mode", heavy DOM glue.
+- `src/app/timeline/timeline-enhancer.tsx` — lighter: a shadow-island injected into
+  a toolbar that toggles `display` on existing ADO rows; good minimal template.
 
 ```ts
 export function createMyEnhancer(): SurfaceEnhancer {
@@ -88,7 +93,11 @@ export function createMyEnhancer(): SurfaceEnhancer {
 Add the factory to the `enhancers` array in `src/entrypoints/content.tsx`:
 
 ```ts
-const enhancers: SurfaceEnhancer[] = [createReviewEnhancer(), createMyEnhancer()];
+const enhancers: SurfaceEnhancer[] = [
+    createReviewEnhancer(),
+    createTimelineEnhancer(),
+    createMyEnhancer(),
+];
 ```
 
 The host (already written) debounces a tick on every DOM mutation, drops stale

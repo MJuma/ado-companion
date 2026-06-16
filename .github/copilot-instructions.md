@@ -4,6 +4,15 @@ A cross-browser extension (Chrome, Edge, Firefox) that adds extra functionality 
 
 Built with **WXT** (Manifest V3 tooling — Chrome/Edge ship MV3, Firefox builds MV2), **SolidJS**, and **Fluent UI Web Components**. Uses **pnpm workspaces** with **pnpm 10**.
 
+## Features (shipped)
+
+Each user-facing feature is a **`SurfaceEnhancer`** — a unit that injects native-looking UI into a specific ADO page, registered with the content-script host (see @lazy-instructions/app-structure.md). To add or change one, read the relevant feature doc below + the `add-content-feature` skill.
+
+1. **PR Markdown Review** (@lazy-instructions/review-feature.md) — a native **"Review"** entry in ADO's PR file view-switcher that renders a `.md` as a document with a Word-style comment rail synced to native ADO threads. Create/edit/reply/resolve comments, @mentions, image upload, text-selection commenting with precise phrase highlight, mermaid diagrams, syntax-highlighted code.
+2. **PR Timeline Filter** (@lazy-instructions/timeline-feature.md) — filter tabs (All / Actions / Commits / Comments / System Messages) on the PR **Overview** activity feed, beside ADO's "Show everything" dropdown.
+
+Also: an **options page** (enable toggle + host allowlist) and a **toolbar popup**. The content host gates every enhancer on those settings.
+
 ## Repository Structure
 
 | Path | Package | Purpose |
@@ -40,7 +49,7 @@ pnpm changeset:version        # Bump version + regenerate CHANGELOG (run before 
 
 Do NOT use `npm install` or `npx` directly. Use `pnpm install` and `pnpm run <script>` (or the root shortcuts above).
 
-The WXT dev server (`pnpm dev:extension`) is managed by the user. If you need it started or restarted, ask the user — do not start or stop it yourself. **Trust the build, not the dev server:** run `pnpm build` (which runs `tsc --noEmit`) to verify correctness.
+The WXT dev server (`pnpm dev:extension`) is managed by the user. If you need it started or restarted, ask the user — do not start or stop it yourself. **Trust the build, not the dev server:** run `pnpm build` (which runs `tsc --noEmit`) to verify correctness. When testing a *loaded* extension live, a page reload does **not** pick up content-script changes — the extension must be reloaded/relaunched after a build (see `[gotcha] extension-reload` in the memory bank).
 
 ## Adding a dependency
 
@@ -112,7 +121,8 @@ On push to `master`, `release.yml` detects the new version, builds, zips, and cr
 
 Load `@lazy-instructions/<file>` (→ `.github/lazy-instructions/`) only when relevant to the task:
 
-- `@lazy-instructions/review-feature.md` — **current feature**: PR Markdown Review (status, decisions, ADO DOM anchors)
+- `@lazy-instructions/review-feature.md` — **PR Markdown Review** feature (decisions, ADO DOM anchors, shipped state)
+- `@lazy-instructions/timeline-feature.md` — **PR Timeline Filter** feature (categorization, ADO DOM anchors, virtualization gotcha)
 - `@lazy-instructions/wxt.md` — WXT config, import paths, MV2/MV3, `wxt prepare`, build/zip outputs
 - `@lazy-instructions/app-structure.md` — directory layout, content-script injection, where to add things
 - `@lazy-instructions/ui-components.md` — Fluent Web Components + Solid, JSX typings, `on:click`, theming
