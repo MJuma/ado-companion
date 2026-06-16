@@ -28,3 +28,4 @@ catalogs:
     vitest: 4.1.4
     '@vitest/coverage-v8': 4.1.4
     wxt: 0.20.26
+    web-ext: 10.4.0

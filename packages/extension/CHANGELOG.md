@@ -1,5 +1,13 @@
 # ado-companion-extension
 
+## 0.6.1
+
+### Patch Changes
+
+- Sign the Firefox build so it installs on normal Firefox.
+
+  The Firefox release artifact is now a Mozilla-signed `.xpi` (self-distribution) instead of an unsigned `.zip`, fixing the misleading "this add-on could not be installed because it appears to be corrupt" error on release/beta Firefox. The Firefox manifest gains a stable add-on ID (`browser_specific_settings.gecko.id`). To install, download `ado-companion-firefox.xpi` from the release and use Firefox's `about:addons` → "Install Add-on From File" (or drag the file onto the page).
+
 ## 0.6.0
 
 ### Minor Changes

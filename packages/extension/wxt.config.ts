@@ -60,7 +60,7 @@ export default defineConfig({
         chromiumArgs: ['--remote-debugging-port=9222'],
         startUrls: ['https://dev.azure.com'],
     },
-    manifest: {
+    manifest: ({ browser }) => ({
         name: 'ADO Companion',
         description: 'Adds extra functionality to Azure DevOps.',
         permissions: ['storage'],
@@ -76,5 +76,11 @@ export default defineConfig({
                 matches: ['https://dev.azure.com/*', 'https://*.visualstudio.com/*'],
             },
         ],
-    },
+        // Firefox requires a stable add-on ID to sign + self-distribute (and for
+        // updates to map to the same add-on). Chrome ignores this key, so only
+        // emit it for the Firefox build to keep the Chrome manifest clean.
+        ...(browser === 'firefox'
+            ? { browser_specific_settings: { gecko: { id: 'ado-companion@mjuma.github.io' } } }
+            : {}),
+    }),
 });

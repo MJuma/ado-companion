@@ -14,6 +14,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -60,6 +63,24 @@ jobs:
           cp "${OUT}/ado-companion-extension-${V}-firefox.zip" "${OUT}/ado-companion-firefox.zip"
           ls -la "${OUT}"/*.zip
 
+      - name: Sign Firefox add-on (self-distribution)
+        if: steps.version.outputs.exists != 'true' && env.AMO_JWT_ISSUER != ''
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          OUT=packages/extension/.output
+          # Signs the built Firefox add-on via Mozilla AMO (unlisted) and writes
+          # the signed .xpi into .output/. Requires the AMO_* repo secrets.
+          pnpm --filter ado-companion-extension run sign:firefox
+          XPI=$(ls "${OUT}"/*.xpi 2>/dev/null | head -1)
+          if [[ -n "$XPI" ]]; then
+            cp "$XPI" "${OUT}/ado-companion-firefox.xpi"
+            echo "✅ Signed add-on: ${OUT}/ado-companion-firefox.xpi"
+          else
+            echo "::warning::web-ext sign produced no .xpi — falling back to the unsigned zip."
+          fi
+
       - name: Extract changelog notes
         if: steps.version.outputs.exists != 'true'
         id: changelog
@@ -79,8 +100,14 @@ jobs:
         run: |
           OUT=packages/extension/.output
           V="${{ steps.version.outputs.version }}"
-          gh release create "v${V}" \
-            "${OUT}/ado-companion-chrome.zip" \
-            "${OUT}/ado-companion-firefox.zip" \
+          # Prefer the signed .xpi (installs on release Firefox); fall back to the
+          # unsigned zip when signing was skipped (no AMO secrets).
+          ASSETS=("${OUT}/ado-companion-chrome.zip")
+          if [[ -f "${OUT}/ado-companion-firefox.xpi" ]]; then
+            ASSETS+=("${OUT}/ado-companion-firefox.xpi")
+          else
+            ASSETS+=("${OUT}/ado-companion-firefox.zip")
+          fi
+          gh release create "v${V}" "${ASSETS[@]}" \
             --title "ADO Companion v${V}" \
             --notes "${{ steps.changelog.outputs.notes }}"

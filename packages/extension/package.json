@@ -1,6 +1,6 @@
 {
     "name": "ado-companion-extension",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "private": true,
     "type": "module",
     "scripts": {
@@ -11,6 +11,7 @@
         "build:firefox": "node scripts/bundle-vendor.mjs && wxt prepare && tsc --noEmit && wxt build -b firefox",
         "zip": "node scripts/bundle-vendor.mjs && wxt zip",
         "zip:firefox": "node scripts/bundle-vendor.mjs && wxt zip -b firefox",
+        "sign:firefox": "node scripts/bundle-vendor.mjs && wxt build -b firefox && web-ext sign --source-dir .output/firefox-mv2 --channel unlisted --artifacts-dir .output",
         "compile": "tsc --noEmit",
         "lint": "oxlint -c ../../oxlintrc.json --tsconfig tsconfig.lint.json --type-aware src/",
         "test": "vitest run"
@@ -38,6 +39,7 @@
         "vite": "catalog:development",
         "vite-plugin-solid": "catalog:development",
         "vitest": "catalog:development",
+        "web-ext": "catalog:development",
         "wxt": "catalog:development"
     }
 }
