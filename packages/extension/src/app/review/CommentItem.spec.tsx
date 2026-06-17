@@ -82,9 +82,24 @@ describe('CommentItem', () => {
             currentUserId: 'user-1',
         });
         expect(screen.getByText('1')).toBeTruthy();
-        fireEvent.click(screen.getByTitle('Unlike'));
+        // The tooltip now lists the liker's name instead of an "Unlike" hint.
+        fireEvent.click(screen.getByTitle('Ada Lovelace'));
         await waitFor(() => expect(unlikeComment).toHaveBeenCalledTimes(1));
         expect(likeComment).not.toHaveBeenCalled();
+    });
+
+    it('lists every liker on its own line in the like tooltip', () => {
+        const { container } = renderItem({
+            comment: makeComment({
+                usersLiked: [
+                    makeIdentity({ id: 'user-1', displayName: 'Ada Lovelace' }),
+                    makeIdentity({ id: 'user-2', displayName: 'Alan Turing' }),
+                ],
+            }),
+            currentUserId: 'user-1',
+        });
+        const like = container.querySelector('.acr-like');
+        expect(like?.getAttribute('title')).toBe('Ada Lovelace\nAlan Turing');
     });
 
     it('requires confirmation before deleting', async () => {

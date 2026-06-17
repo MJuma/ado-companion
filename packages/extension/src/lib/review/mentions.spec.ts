@@ -79,17 +79,28 @@ describe('encodeMentions', () => {
 describe('mention name cache + renderMentions', () => {
     const guid = '91C644C9-8C41-602B-85F5-ED6F3782BBF6';
 
-    it('renders a cached GUID as its name (case-insensitive)', () => {
+    it('renders a cached GUID as a highlighted name mention (case-insensitive)', () => {
         cacheMentionName(guid, 'Jane Doe');
         expect(resolveMentionName(guid.toLowerCase())).toBe('Jane Doe');
-        expect(renderMentions(`@<${guid}> ping`)).toBe('@Jane Doe ping');
+        expect(renderMentions(`@<${guid}> ping`)).toBe(
+            '<span class="acr-mention">@Jane Doe</span> ping',
+        );
     });
 
     it('falls back to @mention for unknown GUIDs', () => {
-        expect(renderMentions(`@<${guid}> ping`)).toBe('@mention ping');
+        expect(renderMentions(`@<${guid}> ping`)).toBe(
+            '<span class="acr-mention">@mention</span> ping',
+        );
     });
 
     it('leaves non-mention content untouched', () => {
         expect(renderMentions('plain @notamention text')).toBe('plain @notamention text');
+    });
+
+    it('HTML-escapes the resolved name so it cannot inject markup', () => {
+        cacheMentionName(guid, 'Eve <img src=x onerror=alert(1)>');
+        expect(renderMentions(`@<${guid}>`)).toBe(
+            '<span class="acr-mention">@Eve &lt;img src=x onerror=alert(1)&gt;</span>',
+        );
     });
 });

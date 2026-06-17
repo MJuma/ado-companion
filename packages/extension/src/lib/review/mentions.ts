@@ -101,13 +101,25 @@ export function clearMentionNames(): void {
     nameCache.clear();
 }
 
+/** Escape HTML-significant characters so a display name can't inject markup. */
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 /**
- * Replace `@<GUID>` tokens in raw comment content with readable `@Name` text
- * (markdown-safe) before rendering, using the name cache when available.
+ * Replace `@<GUID>` tokens in raw comment content with a highlighted `@Name`
+ * mention span (markdown-safe) before rendering, using the name cache when
+ * available. The span survives markdown-it (`html: true`) and DOMPurify; the
+ * name is HTML-escaped so it can't inject markup.
  */
 export function renderMentions(content: string): string {
     return content.replace(MENTION_TOKEN, (_match, guid: string) => {
         const name = resolveMentionName(guid);
-        return name ? `@${name}` : '@mention';
+        const label = name ? `@${name}` : '@mention';
+        return `<span class="acr-mention">${escapeHtml(label)}</span>`;
     });
 }

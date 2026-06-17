@@ -39,6 +39,13 @@ export function CommentItem(props: CommentItemProps) {
 
     const likes = () => props.comment.usersLiked ?? [];
     const likedByMe = () => likes().some((user) => user.id === props.currentUserId);
+    // Tooltip lists everyone who liked, one per line (falls back to the action).
+    const likeTitle = () => {
+        const names = likes()
+            .map((user) => user.displayName)
+            .filter((name) => name.length > 0);
+        return names.length > 0 ? names.join('\n') : 'Like';
+    };
 
     async function saveEdit(content: string): Promise<void> {
         await updateComment(props.prBaseUrl, props.threadId, props.comment.id, content);
@@ -163,7 +170,7 @@ export function CommentItem(props: CommentItemProps) {
                         class="acr-like"
                         classList={{ 'acr-like--on': likedByMe() }}
                         type="button"
-                        title={likedByMe() ? 'Unlike' : 'Like'}
+                        title={likeTitle()}
                         aria-pressed={likedByMe()}
                         disabled={busy()}
                         on:click={() => void toggleLike()}

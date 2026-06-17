@@ -1,5 +1,13 @@
 # ado-companion-extension
 
+## 0.7.0
+
+### Minor Changes
+
+- Improve the Review comment rail: liker tooltip and highlighted @mentions.
+
+  Hovering a comment's thumbs-up now shows a tooltip listing everyone who liked it, one name per line. And @mentions in comments are now highlighted with a distinct blue pill (matching how Azure DevOps styles mentions) instead of rendering as plain text.
+
 ## 0.6.3
 
 ### Patch Changes

@@ -382,5 +382,13 @@ mark.acr-hl--active { background-color: rgba(255, 196, 0, .6); }
 .acr-like:hover:not(:disabled) { background: rgba(var(--palette-neutral-8, 0, 0, 0), .2); }
 .acr-like--on { color: var(--communication-foreground, #0067b8); border-color: var(--communication-foreground, #0067b8); }
 .acr-like__count { font-weight: 600; }
+.acr-mention {
+    color: var(--communication-foreground, #0067b8);
+    background: rgba(0, 103, 184, .12);
+    font-weight: 600;
+    border-radius: 3px;
+    padding: 0 3px;
+    white-space: nowrap;
+}
 .acr-comment__error { margin-top: 6px; font-size: 12px; color: var(--status-error-text, #c4314b); }
 `;
